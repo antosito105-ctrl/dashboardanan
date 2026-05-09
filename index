@@ -123,7 +123,7 @@
 
     <script>
         // MASUKKAN LINK WEB APP GOOGLE SCRIPT KAMU DISINI
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoQ9WTWoTbEuc8wK20_j6PIHFBM9xxy993waOeF0uc2txCMzROywWgvtMkehdFYwuEHA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIKfzSm-h0dwjclaP3p3aOguRVyWkxt_5AbS2UtZf15-ZfkYfBp4fD37XIPKDjzzVHFg/exec';
 
         let dataOrder = [];
 
