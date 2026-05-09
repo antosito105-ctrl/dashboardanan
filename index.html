@@ -32,7 +32,7 @@
                 <h1 class="text-3xl font-extrabold text-slate-800 flex items-center gap-3">
                     Order Parfum <span class="text-2xl">📦</span>
                 </h1>
-                <p class="text-slate-500 mt-1 font-medium">Full Control: Tambah, Hapus & Status Otomatis ke Sheets</p>
+                <p class="text-slate-500 mt-1 font-medium">Sinkronisasi Real-time & Anti-Duplikasi</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="fetchDataDariSheet()" class="bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all flex items-center gap-2 font-bold shadow-xl shadow-blue-200 active:scale-95">
@@ -111,7 +111,7 @@
                             <i class="fas fa-inbox text-2xl opacity-40"></i>
                         </div>
                         <p class="text-sm font-semibold text-slate-500">Belum ada data pesanan.</p>
-                        <p class="text-xs text-slate-400 mt-1">Klik Sinkron Data jika data sudah ada di Sheets.</p>
+                        <p class="text-xs text-slate-400 mt-1">Gunakan tombol sinkron jika data tidak muncul.</p>
                     </div>
                 </div>
             </div>
@@ -126,7 +126,7 @@
 
         let dataOrder = [];
 
-        function showLoading(show, text = "Menyinkronkan Database...") {
+        function showLoading(show, text = "Menyinkronkan...") {
             document.getElementById('loaderText').innerText = text;
             document.getElementById('loader').style.display = show ? 'flex' : 'none';
         }
@@ -143,18 +143,15 @@
             icon.classList.add('spinner');
             
             try {
-                const response = await fetch(`${SCRIPT_URL}?action=read&t=${Date.now()}`, {
-                    method: 'GET'
-                });
+                const response = await fetch(`${SCRIPT_URL}?action=read&t=${Date.now()}`);
                 const data = await response.json();
                 
                 if (Array.isArray(data)) {
-                    dataOrder = data;
+                    dataOrder = data.filter(item => item.nama && item.resi); // Filter baris kosong dari Sheets
                     renderTabel();
                 }
             } catch (e) {
-                console.error('Fetch error:', e);
-                showToast('Gagal sinkron. Pastikan Apps Script diset "Anyone"', true);
+                showToast('Gagal ambil data online', true);
             } finally {
                 icon.classList.remove('spinner');
                 showLoading(false);
@@ -176,21 +173,20 @@
             if (!inputs.nama || !inputs.resi) return showToast('Nama & Resi wajib diisi!', true);
 
             btn.disabled = true;
-            showLoading(true, "Menambahkan data...");
+            showLoading(true, "Menyimpan ke Sheets...");
 
             try {
-                // Gunakan URLSearchParams untuk POST yang lebih kompatibel lintas device
                 await fetch(SCRIPT_URL, { 
                     method: 'POST', 
                     mode: 'no-cors', 
                     body: JSON.stringify({ action: 'create', ...inputs }) 
                 });
                 
-                showToast('Data dikirim ke server...');
+                showToast('Data berhasil disimpan!');
                 ['nama', 'wa', 'produk', 'resi'].forEach(id => document.getElementById(id).value = '');
-                setTimeout(fetchDataDariSheet, 3500);
+                setTimeout(fetchDataDariSheet, 3000);
             } catch (e) {
-                showToast('Gagal mengirim data', true);
+                showToast('Gagal kirim data', true);
                 showLoading(false);
             } finally {
                 btn.disabled = false;
@@ -199,12 +195,11 @@
 
         async function updateStatusSelesai(index) {
             const order = dataOrder[index];
-            showLoading(true, "Memperbarui status...");
+            showLoading(true, "Update status...");
             try {
-                const currentStatus = (order.selesai === true || String(order.selesai).toUpperCase() === "TRUE");
+                const currentStatus = (String(order.selesai).toUpperCase() === "TRUE" || order.selesai === true);
                 
-                // Menambahkan timestamp agar server Google tidak menggunakan cache lama
-                await fetch(`${SCRIPT_URL}?t=${Date.now()}`, {
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: JSON.stringify({ 
@@ -214,8 +209,8 @@
                     })
                 });
                 
-                showToast('Status berhasil diubah...');
-                setTimeout(fetchDataDariSheet, 3500);
+                showToast('Status diperbarui!');
+                setTimeout(fetchDataDariSheet, 3000);
             } catch (e) {
                 showToast('Gagal update', true);
                 showLoading(false);
@@ -224,12 +219,11 @@
 
         async function hapusOrderOnline(index) {
             const order = dataOrder[index];
-            if(!confirm(`Hapus pesanan ${order.nama} secara permanen?`)) return;
+            if(!confirm(`Hapus pesanan ${order.nama}? Data di Spreadsheet juga akan hilang.`)) return;
             
-            showLoading(true, "Menghapus dari database...");
+            showLoading(true, "Menghapus baris di Sheets...");
             try {
-                // Menambahkan timestamp agar server Google tidak menggunakan cache lama
-                await fetch(`${SCRIPT_URL}?t=${Date.now()}`, {
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: JSON.stringify({ 
@@ -238,10 +232,10 @@
                     })
                 });
                 
-                showToast('Data telah dihapus...');
-                setTimeout(fetchDataDariSheet, 3500);
+                showToast('Berhasil dihapus dari database');
+                setTimeout(fetchDataDariSheet, 3000);
             } catch (e) {
-                showToast('Gagal menghapus', true);
+                showToast('Gagal hapus', true);
                 showLoading(false);
             }
         }
@@ -252,20 +246,14 @@
             const countBadge = document.getElementById('orderCount');
             tbody.innerHTML = '';
             
-            const sortedData = [...dataOrder].sort((a, b) => {
-                const sA = (a.selesai === true || String(a.selesai).toUpperCase() === "TRUE");
-                const sB = (b.selesai === true || String(b.selesai).toUpperCase() === "TRUE");
-                return sA - sB;
-            });
+            countBadge.innerText = `${dataOrder.length} Order`;
 
-            countBadge.innerText = `${sortedData.length} Order`;
-
-            if (sortedData.length === 0) {
+            if (dataOrder.length === 0) {
                 emptyState.classList.remove('hidden');
             } else {
                 emptyState.classList.add('hidden');
-                sortedData.forEach((o) => {
-                    const isDone = (o.selesai === true || String(o.selesai).toUpperCase() === "TRUE");
+                dataOrder.forEach((o, idx) => {
+                    const isDone = (String(o.selesai).toUpperCase() === "TRUE" || o.selesai === true);
                     tbody.innerHTML += `
                     <tr class="${isDone ? 'order-done' : ''} hover:bg-slate-50 transition-all border-b border-slate-100">
                         <td class="px-8 py-5">
@@ -281,10 +269,10 @@
                         </td>
                         <td class="px-8 py-5 text-right">
                             <div class="flex justify-end gap-2">
-                                <button onclick="updateStatusSelesai(${dataOrder.indexOf(o)})" class="w-9 h-9 rounded-xl ${isDone ? 'text-orange-500 bg-orange-50' : 'text-green-600 bg-green-50'} flex items-center justify-center border border-transparent hover:border-current shadow-sm">
+                                <button onclick="updateStatusSelesai(${idx})" class="w-9 h-9 rounded-xl ${isDone ? 'text-orange-500 bg-orange-50' : 'text-green-600 bg-green-50'} flex items-center justify-center border border-transparent hover:border-current">
                                     <i class="fas ${isDone ? 'fa-undo' : 'fa-check'} text-xs"></i>
                                 </button>
-                                <button onclick="hapusOrderOnline(${dataOrder.indexOf(o)})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center shadow-sm">
+                                <button onclick="hapusOrderOnline(${idx})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center">
                                     <i class="fas fa-trash-alt text-xs"></i>
                                 </button>
                             </div>
@@ -295,10 +283,7 @@
         }
 
         document.getElementById('tgl').valueAsDate = new Date();
-        window.onload = () => {
-            showLoading(true, "Memuat data...");
-            fetchDataDariSheet();
-        };
+        window.onload = fetchDataDariSheet;
     </script>
 </body>
 </html>
