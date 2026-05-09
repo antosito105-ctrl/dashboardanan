@@ -62,9 +62,8 @@
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Ekspedisi</label>
                             <select id="kurir" class="w-full p-4 bg-slate-50 rounded-2xl text-sm border-none">
-                                <option value="JNE">JNE</option>
-                                <option value="J&T">J&T</option>
-                                <option value="SiCepat">SiCepat</option>
+                                <option value="POS">POS</option>
+                                <option value="SPX">SPX</option>
                             </select>
                         </div>
                     </div>
@@ -122,7 +121,6 @@
                 render(data);
             } catch (e) {
                 console.error("Fetch Error:", e);
-                // Custom Toast/Notification instead of Alert can be added here
             } finally {
                 loading(false);
             }
@@ -153,7 +151,6 @@
                     body: JSON.stringify(payload) 
                 });
                 
-                // Delay agar Google Script selesai memproses di background
                 setTimeout(() => {
                     ambilData();
                     ['nama','wa','produk','resi'].forEach(id => document.getElementById(id).value = '');
@@ -202,7 +199,6 @@
             const container = document.querySelector('#tabelData tbody');
             const emptyState = document.getElementById('emptyState');
             
-            // Filter hanya data yang benar-benar ada isinya (mencegah bug baris kosong)
             const validData = data.filter(item => item.nama && item.resi);
             
             document.getElementById('counter').innerText = `${validData.length} Order`;
@@ -240,9 +236,7 @@
             }
         }
 
-        // Set default date ke hari ini
         document.getElementById('tgl').valueAsDate = new Date();
-        // Ambil data saat halaman dibuka
         window.onload = ambilData;
     </script>
 </body>
