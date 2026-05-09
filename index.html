@@ -28,7 +28,7 @@
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm gap-4">
             <div>
                 <h1 class="text-2xl font-black text-slate-800">Order Parfum 📦</h1>
-                <p class="text-slate-500 text-sm">Full Control: Tambah, Hapus & Status Otomatis</p>
+                <p class="text-slate-500 text-sm">Full Control: Tambah, Hapus, Status & Lacak Resi</p>
             </div>
             <button onclick="ambilData()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all shadow-lg shadow-blue-200">
                 <i class="fas fa-sync-alt"></i> Sinkron Data
@@ -195,6 +195,21 @@
             }
         }
 
+        // FUNGSI BARU: LACAK RESI
+        function lacakResi(resi, kurir) {
+            let url = "";
+            const cleanResi = String(resi).trim();
+            
+            if (kurir === "POS") {
+                url = `https://www.posindonesia.co.id/id/tracking?resi=${cleanResi}`;
+            } else if (kurir === "SPX") {
+                url = `https://spx.co.id/track/${cleanResi}`;
+            } else {
+                url = `https://cekresi.com/?noresi=${cleanResi}`;
+            }
+            window.open(url, '_blank');
+        }
+
         function render(data) {
             const container = document.querySelector('#tabelData tbody');
             const emptyState = document.getElementById('emptyState');
@@ -222,9 +237,15 @@
                             </td>
                             <td class="p-6 text-right">
                                 <div class="flex justify-end gap-2">
+                                    <!-- Tombol Lacak Resi (BARU) -->
+                                    <button onclick="lacakResi('${item.resi}', '${item.ekspedisi}')" title="Lacak Perjalanan" class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white hover:scale-110 active:scale-95 transition-all">
+                                        <i class="fas fa-truck-fast text-xs"></i>
+                                    </button>
+                                    
                                     <button onclick="toggleSelesai('${item.resi}', ${isDone})" title="Tandai Selesai" class="w-9 h-9 rounded-xl ${isDone ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'} flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
                                         <i class="fas ${isDone ? 'fa-undo' : 'fa-check'} text-xs"></i>
                                     </button>
+                                    
                                     <button onclick="hapusData('${item.resi}')" title="Hapus" class="w-9 h-9 rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
                                         <i class="fas fa-trash text-xs"></i>
                                     </button>
