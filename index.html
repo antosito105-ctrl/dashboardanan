@@ -122,7 +122,6 @@
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 bg-slate-900 text-white px-8 py-4 rounded-2xl transition-all duration-500 z-50 text-sm shadow-2xl flex items-center gap-3 font-bold border border-slate-700"></div>
 
     <script>
-        // SCRIPT_URL yang kamu berikan
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIKfzSm-h0dwjclaP3p3aOguRVyWkxt_5AbS2UtZf15-ZfkYfBp4fD37XIPKDjzzVHFg/exec';
 
         let dataOrder = [];
@@ -139,37 +138,29 @@
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 4000);
         }
 
-        // FUNGSI UTAMA: AMBIL DATA DENGAN CROSS-DEVICE FIX
         async function fetchDataDariSheet() {
             const icon = document.getElementById('syncIcon');
             icon.classList.add('spinner');
             
             try {
-                // Gunakan URL dengan timestamp unik untuk menembus cache di perangkat lain
                 const response = await fetch(`${SCRIPT_URL}?action=read&t=${Date.now()}`, {
-                    method: 'GET',
-                    redirect: 'follow'
+                    method: 'GET'
                 });
-                
                 const data = await response.json();
                 
                 if (Array.isArray(data)) {
                     dataOrder = data;
                     renderTabel();
-                } else {
-                    console.error('Data format error:', data);
-                    showToast('Format data tidak sesuai', true);
                 }
             } catch (e) {
                 console.error('Fetch error:', e);
-                showToast('Koneksi diblokir atau gagal. Pastikan setting Apps Script sudah "Anyone"', true);
+                showToast('Gagal sinkron. Pastikan Apps Script diset "Anyone"', true);
             } finally {
                 icon.classList.remove('spinner');
                 showLoading(false);
             }
         }
 
-        // FUNGSI: TAMBAH DATA BARU
         async function tambahOrder() {
             const btn = document.getElementById('btnSimpan');
             const inputs = {
@@ -185,30 +176,24 @@
             if (!inputs.nama || !inputs.resi) return showToast('Nama & Resi wajib diisi!', true);
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-circle-notch spinner"></i> Mengirim...';
-            showLoading(true, "Mengirim data ke Sheets...");
+            showLoading(true, "Menambahkan data...");
 
             try {
-                // POST ke Google Apps Script
+                // Gunakan URLSearchParams untuk POST yang lebih kompatibel lintas device
                 await fetch(SCRIPT_URL, { 
                     method: 'POST', 
                     mode: 'no-cors', 
-                    cache: 'no-cache',
                     body: JSON.stringify({ action: 'create', ...inputs }) 
                 });
                 
-                showToast('Data terkirim! Memperbarui tampilan...');
-                // Reset form
+                showToast('Data dikirim ke server...');
                 ['nama', 'wa', 'produk', 'resi'].forEach(id => document.getElementById(id).value = '');
-                
-                // Beri waktu Sheets untuk simpan (3 detik) lalu refresh otomatis
-                setTimeout(fetchDataDariSheet, 3000);
+                setTimeout(fetchDataDariSheet, 3500);
             } catch (e) {
-                showToast('Gagal mengirim. Periksa koneksi internet.', true);
+                showToast('Gagal mengirim data', true);
                 showLoading(false);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> Simpan ke Sheets';
             }
         }
 
@@ -217,29 +202,44 @@
             showLoading(true, "Memperbarui status...");
             try {
                 const currentStatus = (order.selesai === true || String(order.selesai).toUpperCase() === "TRUE");
-                await fetch(SCRIPT_URL, {
+                
+                // Menambahkan timestamp agar server Google tidak menggunakan cache lama
+                await fetch(`${SCRIPT_URL}?t=${Date.now()}`, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: JSON.stringify({ action: 'update', resi: order.resi, selesai: !currentStatus })
+                    body: JSON.stringify({ 
+                        action: 'update', 
+                        resi: order.resi, 
+                        selesai: !currentStatus 
+                    })
                 });
-                setTimeout(fetchDataDariSheet, 2000);
+                
+                showToast('Status berhasil diubah...');
+                setTimeout(fetchDataDariSheet, 3500);
             } catch (e) {
-                showToast('Gagal update status', true);
+                showToast('Gagal update', true);
                 showLoading(false);
             }
         }
 
         async function hapusOrderOnline(index) {
             const order = dataOrder[index];
-            if(!confirm(`Hapus pesanan ${order.nama}?`)) return;
-            showLoading(true, "Menghapus data...");
+            if(!confirm(`Hapus pesanan ${order.nama} secara permanen?`)) return;
+            
+            showLoading(true, "Menghapus dari database...");
             try {
-                await fetch(SCRIPT_URL, {
+                // Menambahkan timestamp agar server Google tidak menggunakan cache lama
+                await fetch(`${SCRIPT_URL}?t=${Date.now()}`, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: JSON.stringify({ action: 'delete', resi: order.resi })
+                    body: JSON.stringify({ 
+                        action: 'delete', 
+                        resi: order.resi 
+                    })
                 });
-                setTimeout(fetchDataDariSheet, 2000);
+                
+                showToast('Data telah dihapus...');
+                setTimeout(fetchDataDariSheet, 3500);
             } catch (e) {
                 showToast('Gagal menghapus', true);
                 showLoading(false);
@@ -296,7 +296,7 @@
 
         document.getElementById('tgl').valueAsDate = new Date();
         window.onload = () => {
-            showLoading(true, "Memuat data awal...");
+            showLoading(true, "Memuat data...");
             fetchDataDariSheet();
         };
     </script>
