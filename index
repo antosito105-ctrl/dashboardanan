@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Order Parfum App - Full Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.7); z-index: 100; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <!-- Overlay Loading saat hapus data -->
+    <div id="loader" class="loading-overlay">
+        <i class="fas fa-circle-notch spinner text-3xl text-blue-600"></i>
+    </div>
+
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
+                    Order Parfum 📦
+                </h1>
+                <p class="text-slate-500 mt-1">Full Control: Tambah & Hapus Terkoneksi Sheets</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="fetchDataDariSheet()" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-2 font-bold shadow-lg shadow-blue-100">
+                    <i class="fas fa-sync-alt" id="syncIcon"></i> Sinkron Data
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Form Input -->
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-8">
+                    <h2 class="text-lg font-semibold mb-4 text-slate-800 text-center">Input Pesanan</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Nama Pembeli</label>
+                            <input type="text" id="nama" placeholder="Masukkan nama..." class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Nomor WA</label>
+                            <input type="text" id="wa" placeholder="0812..." class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Nama Produk</label>
+                            <input type="text" id="produk" placeholder="Contoh: Blue Aqua 50ml" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Tanggal</label>
+                                <input type="date" id="tgl" class="w-full px-3 py-3 rounded-xl border border-slate-200 outline-none text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Ekspedisi</label>
+                                <select id="ekspedisi" class="w-full px-3 py-3 rounded-xl border border-slate-200 bg-white outline-none text-sm">
+                                    <option value="jne">JNE</option>
+                                    <option value="jnt">J&T</option>
+                                    <option value="sicepat">SiCepat</option>
+                                    <option value="shopee">Shopee Express</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Nomor Resi</label>
+                            <input type="text" id="resi" placeholder="Masukkan resi..." class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button id="btnSimpan" onclick="tambahOrder()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition flex justify-center items-center gap-2">
+                            <i class="fas fa-save"></i> Simpan ke Sheets
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List Data -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                        <h2 class="font-bold text-slate-700">Daftar Pesanan</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left" id="tabelOrder">
+                            <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold">
+                                <tr>
+                                    <th class="px-6 py-4">Pembeli</th>
+                                    <th class="px-6 py-4">Produk & Resi</th>
+                                    <th class="px-6 py-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="emptyState" class="p-16 text-center text-slate-400 hidden">
+                        <i class="fas fa-inbox text-4xl mb-3 block"></i>
+                        <p class="text-sm">Belum ada data pesanan.</p>
+                        <p class="text-[10px]">Klik tombol "Sinkron Data" untuk menyegarkan.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifikasi -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 bg-slate-900 text-white px-6 py-3 rounded-xl transition-all duration-300 z-50 text-sm shadow-xl flex items-center gap-2"></div>
+
+    <script>
+        // URL SCRIPT GOOGLE KAMU (SUDAH TERPASANG)
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxGi7_rQQxySpZr_QRY1wQfIx3eZbW3IMMMfcLHoLVbDLNrOEloV3KTqEQ6taRbl6yLPQ/exec';
+
+        let dataOrder = JSON.parse(localStorage.getItem('dataParfum') || '[]');
+
+        function showLoading(show) {
+            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.innerHTML = isError ? `<i class="fas fa-times-circle text-red-400"></i> ${msg}` : `<i class="fas fa-check-circle text-green-400"></i> ${msg}`;
+            toast.style.backgroundColor = isError ? '#ef4444' : '#0f172a';
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        async function fetchDataDariSheet() {
+            const icon = document.getElementById('syncIcon');
+            icon.classList.add('spinner');
+            try {
+                const res = await fetch(SCRIPT_URL + '?action=read');
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    dataOrder = data;
+                    localStorage.setItem('dataParfum', JSON.stringify(dataOrder));
+                    renderTabel();
+                    showToast('Data berhasil disinkronkan!');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Gagal sinkron data online', true);
+            } finally {
+                icon.classList.remove('spinner');
+            }
+        }
+
+        async function tambahOrder() {
+            const btn = document.getElementById('btnSimpan');
+            const inputs = {
+                nama: document.getElementById('nama'),
+                wa: document.getElementById('wa'),
+                produk: document.getElementById('produk'),
+                resi: document.getElementById('resi'),
+                tgl: document.getElementById('tgl'),
+                ekspedisi: document.getElementById('ekspedisi')
+            };
+
+            const payload = {
+                action: 'create',
+                nama: inputs.nama.value,
+                wa: inputs.wa.value,
+                produk: inputs.produk.value,
+                tgl: inputs.tgl.value,
+                ekspedisi: inputs.ekspedisi.value,
+                resi: inputs.resi.value,
+                selesai: false
+            };
+
+            if (!payload.nama || !payload.resi) return showToast('Nama & Resi wajib diisi!', true);
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner spinner"></i> Mengirim ke Sheets...';
+
+            try {
+                // Kirim data ke Google Sheets
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+                
+                showToast('Terkirim! Memperbarui list...');
+                
+                // Reset form
+                ['nama', 'wa', 'produk', 'resi'].forEach(id => document.getElementById(id).value = '');
+                
+                // Tunggu sebentar lalu tarik data terbaru
+                setTimeout(fetchDataDariSheet, 1500);
+            } catch (e) {
+                showToast('Gagal kirim online', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Simpan ke Sheets';
+            }
+        }
+
+        async function hapusOrderOnline(index) {
+            const order = dataOrder[index];
+            if(!confirm(`Hapus pesanan atas nama "${order.nama}" secara permanen di Google Sheets?`)) return;
+
+            showLoading(true);
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'delete',
+                        resi: order.resi
+                    })
+                });
+                
+                showToast('Menghapus di database Sheets...');
+                // Jeda sebentar agar Sheets memproses hapus baris
+                setTimeout(fetchDataDariSheet, 1500);
+            } catch (e) {
+                showToast('Gagal menghapus data online', true);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderTabel() {
+            const tbody = document.querySelector('#tabelOrder tbody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+            
+            if (dataOrder.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                dataOrder.forEach((o, i) => {
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-slate-800 text-sm">${o.nama}</div>
+                            <div class="text-[11px] text-blue-500 font-medium">${o.wa}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-xs text-slate-600">${o.produk}</div>
+                            <div class="text-[10px] text-slate-400 font-mono tracking-tight">
+                                <span class="bg-slate-100 px-1 rounded text-[9px] font-bold text-slate-500">${o.ekspedisi.toUpperCase()}</span> ${o.resi}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="hapusOrderOnline(${i})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center ml-auto">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                });
+            }
+            localStorage.setItem('dataParfum', JSON.stringify(dataOrder));
+        }
+
+        // Set tanggal default hari ini
+        document.getElementById('tgl').valueAsDate = new Date();
+        
+        // Render awal dari data lokal
+        renderTabel();
+        
+        // Langsung sinkron saat website dibuka
+        window.onload = fetchDataDariSheet;
+    </script>
+</body>
+</html>
