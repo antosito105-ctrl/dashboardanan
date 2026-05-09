@@ -2,288 +2,184 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Order Parfum App - Full Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Parfum - Sync System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
-        .spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.85); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 12px; backdrop-filter: blur(4px); }
-        .order-done { opacity: 0.6; background-color: #f0fdf4 !important; }
-        .order-done .text-content { text-decoration: line-through; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .status-done { opacity: 0.5; background-color: #f8fafc !important; }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <!-- Overlay Loading Global -->
-    <div id="loader" class="loading-overlay">
-        <div class="relative">
-            <i class="fas fa-circle-notch spinner text-5xl text-blue-600"></i>
-            <i class="fas fa-sync-alt absolute inset-0 flex items-center justify-center text-xs text-blue-400"></i>
-        </div>
-        <p class="text-sm font-bold text-slate-700 animate-pulse" id="loaderText">Menyinkronkan Database...</p>
+
+    <div id="loader" class="loading-overlay flex-col gap-4">
+        <i class="fas fa-circle-notch fa-spin text-4xl text-blue-600"></i>
+        <p class="font-bold text-slate-700" id="loaderText">Sinkronisasi...</p>
     </div>
 
-    <div class="max-w-6xl mx-auto">
-        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="max-w-5xl mx-auto">
+        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm">
             <div>
-                <h1 class="text-3xl font-extrabold text-slate-800 flex items-center gap-3">
-                    Order Parfum <span class="text-2xl">📦</span>
-                </h1>
-                <p class="text-slate-500 mt-1 font-medium">Sinkronisasi Real-time & Anti-Duplikasi</p>
+                <h1 class="text-2xl font-black text-slate-800">Order Parfum 📦</h1>
+                <p class="text-slate-500 text-sm">Full Control: Tambah, Hapus & Status Otomatis</p>
             </div>
-            <div class="flex gap-2">
-                <button onclick="fetchDataDariSheet()" class="bg-blue-600 text-white px-6 py-3 rounded-2xl hover:bg-blue-700 transition-all flex items-center gap-2 font-bold shadow-xl shadow-blue-200 active:scale-95">
-                    <i class="fas fa-sync-alt" id="syncIcon"></i> Sinkron Data
-                </button>
-            </div>
+            <button onclick="ambilData()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl flex items-center gap-2 font-bold transition-all shadow-lg shadow-blue-200">
+                <i class="fas fa-sync-alt"></i> Sinkron Data
+            </button>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Form Input -->
-            <div class="lg:col-span-4">
-                <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 sticky top-8">
-                    <h2 class="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
-                        <i class="fas fa-plus-circle text-blue-500"></i> Input Pesanan
-                    </h2>
-                    <div class="space-y-5">
-                        <div class="group">
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Nama Pembeli</label>
-                            <input type="text" id="nama" placeholder="Masukkan nama..." class="w-full px-4 py-3.5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-                        </div>
-                        <div class="group">
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Nomor WA</label>
-                            <input type="text" id="wa" placeholder="0812..." class="w-full px-4 py-3.5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-                        </div>
-                        <div class="group">
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Nama Produk</label>
-                            <input type="text" id="produk" placeholder="Contoh: Blue Aqua 50ml" class="w-full px-4 py-3.5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Tanggal</label>
-                                <input type="date" id="tgl" class="w-full px-3 py-3.5 rounded-2xl border border-slate-100 bg-slate-50 outline-none text-sm font-medium">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Ekspedisi</label>
-                                <select id="ekspedisi" class="w-full px-3 py-3.5 rounded-2xl border border-slate-100 bg-slate-50 outline-none text-sm font-medium">
-                                    <option value="JNE">JNE</option>
-                                    <option value="J&T">J&T</option>
-                                    <option value="SiCepat">SiCepat</option>
-                                    <option value="SPX">SPX (Shopee)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="group">
-                            <label class="block text-xs font-bold text-slate-400 mb-1.5 ml-1 uppercase tracking-wider">Nomor Resi</label>
-                            <input type="text" id="resi" placeholder="Masukkan resi..." class="w-full px-4 py-3.5 rounded-2xl border border-slate-100 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-mono">
-                        </div>
-                        <button id="btnSimpan" onclick="tambahOrder()" class="w-full bg-blue-600 text-white font-extrabold py-4 rounded-2xl shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all flex justify-center items-center gap-2 active:scale-95">
-                            <i class="fas fa-save"></i> Simpan ke Sheets
-                        </button>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form -->
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 h-fit">
+                <h2 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <i class="fas fa-plus-circle text-blue-500"></i> Pesanan Baru
+                </h2>
+                <div class="space-y-4">
+                    <input type="text" id="nama" placeholder="Nama Pembeli" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border-none">
+                    <input type="text" id="wa" placeholder="Nomor WA" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border-none">
+                    <input type="text" id="produk" placeholder="Nama Produk" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border-none">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="tgl" class="p-4 bg-slate-50 rounded-2xl text-sm border-none">
+                        <select id="kurir" class="p-4 bg-slate-50 rounded-2xl text-sm border-none">
+                            <option value="JNE">JNE</option>
+                            <option value="J&T">J&T</option>
+                            <option value="SiCepat">SiCepat</option>
+                        </select>
                     </div>
+                    <input type="text" id="resi" placeholder="Nomor Resi (Kunci Utama)" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border-none font-mono">
+                    <button onclick="simpanData()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 shadow-md">Simpan ke Sheets</button>
                 </div>
             </div>
 
-            <!-- List Data -->
-            <div class="lg:col-span-8">
-                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-8 py-6 bg-white border-b border-slate-100 flex justify-between items-center">
-                        <h2 class="font-bold text-slate-800 text-lg">Daftar Pesanan</h2>
-                        <span id="orderCount" class="text-xs bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full font-bold border border-blue-100">0 Order</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left" id="tabelOrder">
-                            <thead class="bg-slate-50/50 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
-                                <tr>
-                                    <th class="px-8 py-4">Pembeli</th>
-                                    <th class="px-8 py-4">Produk & Resi</th>
-                                    <th class="px-8 py-4 text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100"></tbody>
-                        </table>
-                    </div>
-                    <div id="emptyState" class="p-24 text-center text-slate-400">
-                        <div class="bg-slate-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-inbox text-2xl opacity-40"></i>
-                        </div>
-                        <p class="text-sm font-semibold text-slate-500">Belum ada data pesanan.</p>
-                        <p class="text-xs text-slate-400 mt-1">Gunakan tombol sinkron jika data tidak muncul.</p>
-                    </div>
+            <!-- List -->
+            <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                <div class="p-6 border-b border-slate-50 flex justify-between items-center">
+                    <h2 class="font-bold text-slate-800 text-lg">Daftar Pengiriman</h2>
+                    <span id="counter" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">0 Order</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="tabelData">
+                        <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
+                            <tr>
+                                <th class="p-6 text-left">Pembeli</th>
+                                <th class="p-6 text-left">Produk & Resi</th>
+                                <th class="p-6 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notifikasi -->
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 bg-slate-900 text-white px-8 py-4 rounded-2xl transition-all duration-500 z-50 text-sm shadow-2xl flex items-center gap-3 font-bold border border-slate-700"></div>
-
     <script>
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIKfzSm-h0dwjclaP3p3aOguRVyWkxt_5AbS2UtZf15-ZfkYfBp4fD37XIPKDjzzVHFg/exec';
+        // GANTI INI DENGAN URL WEB APP BARU SETELAH DEPLOY ULANG
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIKfzSm-h0dwjclaP3p3aOguRVyWkxt_5AbS2UtZf15-ZfkYfBp4fD37XIPKDjzzVHFg/exec';
 
-        let dataOrder = [];
-
-        function showLoading(show, text = "Menyinkronkan...") {
-            document.getElementById('loaderText').innerText = text;
+        function loading(show, text = "") {
             document.getElementById('loader').style.display = show ? 'flex' : 'none';
+            if(text) document.getElementById('loaderText').innerText = text;
         }
 
-        function showToast(msg, isError = false) {
-            const toast = document.getElementById('toast');
-            toast.innerHTML = isError ? `<i class="fas fa-exclamation-triangle text-red-500"></i> ${msg}` : `<i class="fas fa-check-circle text-green-500"></i> ${msg}`;
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 4000);
-        }
-
-        async function fetchDataDariSheet() {
-            const icon = document.getElementById('syncIcon');
-            icon.classList.add('spinner');
-            
+        async function ambilData() {
+            loading(true, "Mengambil data...");
             try {
-                const response = await fetch(`${SCRIPT_URL}?action=read&t=${Date.now()}`);
-                const data = await response.json();
-                
-                if (Array.isArray(data)) {
-                    dataOrder = data.filter(item => item.nama && item.resi); // Filter baris kosong dari Sheets
-                    renderTabel();
-                }
+                const res = await fetch(`${WEB_APP_URL}?action=read&_=${new Date().getTime()}`);
+                const data = await res.json();
+                render(data);
             } catch (e) {
-                showToast('Gagal ambil data online', true);
+                console.error(e);
             } finally {
-                icon.classList.remove('spinner');
-                showLoading(false);
+                loading(false);
             }
         }
 
-        async function tambahOrder() {
-            const btn = document.getElementById('btnSimpan');
-            const inputs = {
-                nama: document.getElementById('nama').value.trim(),
-                wa: document.getElementById('wa').value.trim(),
-                produk: document.getElementById('produk').value.trim(),
+        async function simpanData() {
+            const payload = {
+                action: 'create',
+                nama: document.getElementById('nama').value,
+                wa: document.getElementById('wa').value,
+                produk: document.getElementById('produk').value,
                 tgl: document.getElementById('tgl').value,
-                ekspedisi: document.getElementById('ekspedisi').value,
-                resi: document.getElementById('resi').value.trim(),
+                ekspedisi: document.getElementById('kurir').value,
+                resi: document.getElementById('resi').value,
                 selesai: false
             };
 
-            if (!inputs.nama || !inputs.resi) return showToast('Nama & Resi wajib diisi!', true);
+            if(!payload.nama || !payload.resi) return alert("Nama & Resi Wajib Isi!");
 
-            btn.disabled = true;
-            showLoading(true, "Menyimpan ke Sheets...");
-
-            try {
-                await fetch(SCRIPT_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ action: 'create', ...inputs }) 
-                });
-                
-                showToast('Data berhasil disimpan!');
-                ['nama', 'wa', 'produk', 'resi'].forEach(id => document.getElementById(id).value = '');
-                setTimeout(fetchDataDariSheet, 3000);
-            } catch (e) {
-                showToast('Gagal kirim data', true);
-                showLoading(false);
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
-        async function updateStatusSelesai(index) {
-            const order = dataOrder[index];
-            showLoading(true, "Update status...");
-            try {
-                const currentStatus = (String(order.selesai).toUpperCase() === "TRUE" || order.selesai === true);
-                
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({ 
-                        action: 'update', 
-                        resi: order.resi, 
-                        selesai: !currentStatus 
-                    })
-                });
-                
-                showToast('Status diperbarui!');
-                setTimeout(fetchDataDariSheet, 3000);
-            } catch (e) {
-                showToast('Gagal update', true);
-                showLoading(false);
-            }
-        }
-
-        async function hapusOrderOnline(index) {
-            const order = dataOrder[index];
-            if(!confirm(`Hapus pesanan ${order.nama}? Data di Spreadsheet juga akan hilang.`)) return;
+            loading(true, "Menyimpan...");
+            await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
             
-            showLoading(true, "Menghapus baris di Sheets...");
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({ 
-                        action: 'delete', 
-                        resi: order.resi 
-                    })
-                });
-                
-                showToast('Berhasil dihapus dari database');
-                setTimeout(fetchDataDariSheet, 3000);
-            } catch (e) {
-                showToast('Gagal hapus', true);
-                showLoading(false);
-            }
+            setTimeout(() => {
+                alert("Data Tersimpan!");
+                ambilData();
+                ['nama','wa','produk','resi'].forEach(id => document.getElementById(id).value = '');
+            }, 2000);
         }
 
-        function renderTabel() {
-            const tbody = document.querySelector('#tabelOrder tbody');
-            const emptyState = document.getElementById('emptyState');
-            const countBadge = document.getElementById('orderCount');
-            tbody.innerHTML = '';
-            
-            countBadge.innerText = `${dataOrder.length} Order`;
+        async function hapusData(resi) {
+            if(!confirm("Yakin hapus? Data di spreadsheet juga akan hilang.")) return;
+            loading(true, "Menghapus...");
+            await fetch(WEB_APP_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ action: 'delete', resi: String(resi) }) 
+            });
+            setTimeout(() => {
+                alert("Terhapus!");
+                ambilData();
+            }, 2000);
+        }
 
-            if (dataOrder.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                dataOrder.forEach((o, idx) => {
-                    const isDone = (String(o.selesai).toUpperCase() === "TRUE" || o.selesai === true);
-                    tbody.innerHTML += `
-                    <tr class="${isDone ? 'order-done' : ''} hover:bg-slate-50 transition-all border-b border-slate-100">
-                        <td class="px-8 py-5">
-                            <div class="font-bold text-slate-800 text-sm text-content">${o.nama}</div>
-                            <div class="text-[11px] text-blue-500 font-bold mt-0.5">${o.wa || '-'}</div>
+        async function toggleSelesai(resi, statusSekarang) {
+            loading(true, "Update status...");
+            await fetch(WEB_APP_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ action: 'update', resi: String(resi), selesai: !statusSekarang }) 
+            });
+            setTimeout(ambilData, 2000);
+        }
+
+        function render(data) {
+            const container = document.querySelector('#tabelData tbody');
+            document.getElementById('counter').innerText = `${data.length} Order`;
+            container.innerHTML = '';
+            
+            data.filter(item => item.resi).forEach(item => {
+                const isDone = String(item.selesai).toLowerCase() === 'true';
+                container.innerHTML += `
+                    <tr class="${isDone ? 'status-done' : ''}">
+                        <td class="p-6">
+                            <div class="font-bold text-slate-800 text-sm">${item.nama}</div>
+                            <div class="text-xs text-blue-600 font-medium">${item.wa || '-'}</div>
                         </td>
-                        <td class="px-8 py-5">
-                            <div class="text-xs text-slate-600 text-content font-semibold">${o.produk}</div>
-                            <div class="flex items-center gap-2 mt-1.5">
-                                <span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-black uppercase">${o.ekspedisi}</span>
-                                <span class="text-[10px] text-slate-400 font-mono">${o.resi}</span>
-                            </div>
+                        <td class="p-6">
+                            <div class="text-xs text-slate-600 font-bold">${item.produk}</div>
+                            <div class="text-[10px] text-slate-400 font-mono mt-1">${item.ekspedisi} - ${item.resi}</div>
                         </td>
-                        <td class="px-8 py-5 text-right">
+                        <td class="p-6 text-right">
                             <div class="flex justify-end gap-2">
-                                <button onclick="updateStatusSelesai(${idx})" class="w-9 h-9 rounded-xl ${isDone ? 'text-orange-500 bg-orange-50' : 'text-green-600 bg-green-50'} flex items-center justify-center border border-transparent hover:border-current">
+                                <button onclick="toggleSelesai('${item.resi}', ${isDone})" class="w-8 h-8 rounded-lg ${isDone ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'} flex items-center justify-center">
                                     <i class="fas ${isDone ? 'fa-undo' : 'fa-check'} text-xs"></i>
                                 </button>
-                                <button onclick="hapusOrderOnline(${idx})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center">
-                                    <i class="fas fa-trash-alt text-xs"></i>
+                                <button onclick="hapusData('${item.resi}')" class="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+                                    <i class="fas fa-trash text-xs"></i>
                                 </button>
                             </div>
                         </td>
-                    </tr>`;
-                });
-            }
+                    </tr>
+                `;
+            });
         }
 
         document.getElementById('tgl').valueAsDate = new Date();
-        window.onload = fetchDataDariSheet;
+        window.onload = ambilData;
     </script>
 </body>
 </html>
