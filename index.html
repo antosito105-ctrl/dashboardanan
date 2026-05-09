@@ -3,109 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Parfum - Sync System</title>
+    <title>Order Parfum - Smart Sync System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .status-done { opacity: 0.5; background-color: #f8fafc !important; }
-        input, select { transition: all 0.2s; }
-        input:focus { transform: translateY(-1px); }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f0f4f8; 
+            color: #1e293b;
+        }
+
+        .loading-overlay { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(15, 23, 42, 0.6); 
+            z-index: 100; 
+            align-items: center; 
+            justify-content: center; 
+            backdrop-filter: blur(4px); 
+        }
+
+        .status-done { 
+            opacity: 0.6; 
+            background-color: #f1f5f9 !important; 
+        }
+
+        #modalTrack { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(15, 23, 42, 0.8); 
+            z-index: 1000; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 16px; 
+            backdrop-filter: blur(12px); 
+        }
+
+        .modal-content { 
+            background: white; 
+            width: 100%; 
+            max-width: 1000px; 
+            height: 85vh; 
+            border-radius: 28px; 
+            overflow: hidden; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        #toast { 
+            visibility: hidden; 
+            min-width: 280px; 
+            background-color: #1e293b; 
+            color: #fff; 
+            text-align: center; 
+            border-radius: 16px; 
+            padding: 16px; 
+            position: fixed; 
+            z-index: 1100; 
+            left: 50%; 
+            bottom: 40px; 
+            transform: translateX(-50%); 
+            font-size: 14px; 
+            font-weight: 600; 
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 40px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 40px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+        .magic-input:focus {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <!-- Loader Overlay -->
-    <div id="loader" class="loading-overlay flex-col gap-4">
-        <i class="fas fa-circle-notch fa-spin text-4xl text-blue-600"></i>
-        <p class="font-bold text-slate-700" id="loaderText">Sinkronisasi...</p>
+    <div id="toast">Notifikasi</div>
+
+    <!-- Modal Pelacakan -->
+    <div id="modalTrack" onclick="if(event.target === this) closeModal()">
+        <div class="modal-content">
+            <div class="p-5 bg-white border-b flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                        <i class="fas fa-shipping-fast text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-800 leading-tight" id="modalTitle">Lacak Pesanan</h3>
+                        <p class="text-xs text-blue-600 font-bold tracking-widest uppercase" id="modalSubtitle"></p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-red-50 hover:text-red-600 transition-all">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="flex-1 bg-slate-50 relative">
+                <div id="iframeLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10">
+                    <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-sm text-slate-500 font-bold">Memuat Data Kurir...</p>
+                </div>
+                <iframe id="trackFrame" class="w-full h-full border-none" src="" onload="document.getElementById('iframeLoader').style.display='none'"></iframe>
+            </div>
+            <div class="p-4 border-t text-center">
+                <button onclick="copyCurrentResi()" class="text-blue-600 font-bold text-sm hover:underline"><i class="fas fa-copy mr-1"></i> Salin Resi Lagi</button>
+            </div>
+        </div>
     </div>
 
-    <div class="max-w-5xl mx-auto">
-        <!-- Header -->
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 bg-white p-6 rounded-3xl shadow-sm gap-4">
+    <!-- Loader -->
+    <div id="loader" class="loading-overlay flex-col gap-6">
+        <div class="bg-white p-8 rounded-3xl flex flex-col items-center shadow-2xl">
+            <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p class="font-extrabold text-slate-800" id="loaderText">Loading...</p>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
             <div>
-                <h1 class="text-2xl font-black text-slate-800">Order Parfum 📦</h1>
-                <p class="text-slate-500 text-sm">Full Control: Tambah, Hapus, Status & Lacak Resi</p>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Sync Order <span class="text-blue-600">Premium</span></h1>
+                <p class="text-slate-500 font-medium">Input otomatis dengan Smart Parser</p>
             </div>
-            <button onclick="ambilData()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all shadow-lg shadow-blue-200">
-                <i class="fas fa-sync-alt"></i> Sinkron Data
-            </button>
+            <div class="flex gap-2">
+                <button onclick="ambilData()" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all">
+                    <i class="fas fa-sync-alt text-blue-600"></i>
+                </button>
+            </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- TOP SECTION: SMART PARSER -->
+        <div class="mb-8">
+            <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-extrabold text-slate-800">Smart Parser (Input Otomatis)</h2>
+                        <p class="text-xs text-slate-400">Tempel chat format pesanan di sini</p>
+                    </div>
+                </div>
+                <div class="relative">
+                    <textarea id="rawText" rows="4" oninput="parseData()" placeholder="Tempel format pesanan di sini..." class="magic-input w-full p-5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 outline-none focus:border-blue-400 transition-all font-medium text-sm"></textarea>
+                    <div id="parseIndicator" class="hidden absolute right-4 bottom-4 bg-green-500 text-white px-3 py-1 rounded-full text-[10px] font-bold animate-bounce">
+                        DATA TERBACA!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <!-- Form Section -->
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 h-fit">
-                <h2 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    <i class="fas fa-plus-circle text-blue-500"></i> Pesanan Baru
-                </h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Nama Pembeli</label>
-                        <input type="text" id="nama" placeholder="Masukkan nama..." class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border-none">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Nomor WA</label>
-                        <input type="text" id="wa" placeholder="0812..." class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border-none">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Nama Produk</label>
-                        <input type="text" id="produk" placeholder="Contoh: Blue Aqua 50ml" class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border-none">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
+            <div class="lg:col-span-4">
+                <div class="bg-white p-8 rounded-[32px] shadow-sm border border-slate-200 sticky top-10">
+                    <h2 class="font-extrabold text-xl text-slate-800 mb-6 flex items-center gap-3">
+                        Konfirmasi Data
+                    </h2>
+                    
+                    <div class="space-y-4">
                         <div>
-                            <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Tanggal</label>
-                            <input type="date" id="tgl" class="w-full p-4 bg-slate-50 rounded-2xl text-sm border-none">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nama Pembeli</label>
+                            <input type="text" id="nama" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nomor WhatsApp</label>
+                                <input type="text" id="wa" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nama Produk</label>
+                                <input type="text" id="produk" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                            </div>
+                        </div>
+
+                        <!-- Data Keuangan -->
+                        <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl">
+                            <div>
+                                <label class="text-[9px] font-bold text-slate-400 uppercase">Harga</label>
+                                <input type="number" id="harga" oninput="hitungUntung()" class="w-full p-2 bg-white rounded-lg border border-slate-200 outline-none text-sm font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-bold text-slate-400 uppercase">Setoran</label>
+                                <input type="number" id="setoran" oninput="hitungUntung()" class="w-full p-2 bg-white rounded-lg border border-slate-200 outline-none text-sm font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-bold text-blue-600 uppercase">Untung</label>
+                                <input type="number" id="untung" readonly class="w-full p-2 bg-blue-100 rounded-lg border-none outline-none text-sm font-black text-blue-700">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tanggal</label>
+                                <input type="date" id="tgl" class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Kurir</label>
+                                <select id="kurir" class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs font-bold text-blue-600 outline-none">
+                                    <option value="POS">POS INDO</option>
+                                    <option value="SPX">SPX</option>
+                                    <option value="JNE">JNE</option>
+                                    <option value="JNT">J&T</option>
+                                    <option value="SICEPAT">SiCepat</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
-                            <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Ekspedisi</label>
-                            <select id="kurir" class="w-full p-4 bg-slate-50 rounded-2xl text-sm border-none">
-                                <option value="POS">POS</option>
-                                <option value="SPX">SPX</option>
-                            </select>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nomor Resi</label>
+                            <input type="text" id="resi" class="w-full p-4 bg-blue-50 text-blue-700 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold">
                         </div>
+
+                        <button id="btnSimpan" onclick="simpanData()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4">
+                            <i class="fas fa-save"></i> SIMPAN PESANAN
+                        </button>
                     </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Nomor Resi</label>
-                        <input type="text" id="resi" placeholder="Masukkan resi..." class="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border-none font-mono">
-                    </div>
-                    <button id="btnSimpan" onclick="simpanData()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 shadow-md transition-all">
-                        <i class="fas fa-save mr-2"></i>Simpan ke Sheets
-                    </button>
                 </div>
             </div>
 
             <!-- List Section -->
-            <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-6 border-b border-slate-50 flex justify-between items-center">
-                    <h2 class="font-bold text-slate-800 text-lg">Daftar Pesanan</h2>
-                    <span id="counter" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">0 Order</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full" id="tabelData">
-                        <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
-                            <tr>
-                                <th class="p-6 text-left">Pembeli</th>
-                                <th class="p-6 text-left">Produk & Resi</th>
-                                <th class="p-6 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50"></tbody>
-                    </table>
-                </div>
-                <div id="emptyState" class="p-20 text-center text-slate-400 hidden">
-                    <i class="fas fa-box-open text-4xl mb-4 opacity-20"></i>
-                    <p>Belum ada data pesanan.</p>
+            <div class="lg:col-span-8">
+                <div class="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b flex justify-between items-center bg-slate-50/50">
+                        <div class="flex items-center gap-4">
+                            <input type="text" id="searchInput" onkeyup="renderFiltered()" placeholder="Cari..." class="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 w-40 md:w-64 transition-all">
+                        </div>
+                        <span id="counter" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black">0 ORDER</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full" id="tabelData">
+                            <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
+                                <tr>
+                                    <th class="px-6 py-4 text-left">Pembeli</th>
+                                    <th class="px-6 py-4 text-left">Produk & Keuangan</th>
+                                    <th class="px-6 py-4 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    <div id="emptyState" class="p-20 text-center text-slate-300 hidden">
+                        <i class="fas fa-box-open text-4xl mb-4"></i>
+                        <p class="font-bold text-sm">Tidak ada data ditemukan</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // URL WEB APP TERBARU
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyopbuK8Owl2jovPzvhmuJ-De7WqD6owAXjlve-CJwVhkXRcwHbIhiOY1qvC6D7RceiYw/exec';
+        let masterData = [];
+        let currentActiveResi = "";
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            toast.innerText = msg;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
 
         function loading(show, text = "") {
             const loader = document.getElementById('loader');
@@ -113,140 +273,115 @@
             if(text) document.getElementById('loaderText').innerText = text;
         }
 
+        function hitungUntung() {
+            const harga = parseFloat(document.getElementById('harga').value) || 0;
+            const setoran = parseFloat(document.getElementById('setoran').value) || 0;
+            document.getElementById('untung').value = harga - setoran;
+        }
+
+        // --- ENHANCED SMART PARSER ENGINE ---
+        function parseData() {
+            const raw = document.getElementById('rawText').value;
+            const indicator = document.getElementById('parseIndicator');
+
+            const namePattern = /^Nama\s*[:\-]\s*([^\r\n]+)/im;
+            const waPattern = /^No\.\s*Tlp\/WA\s*[:\-]\s*(\d+)/im;
+            const productPattern = /^Nama\s*barang\s*[:\-]\s*([^\r\n]+)/im;
+            const pricePattern = /^Harga\s*[:\-]?\s*(\d+)/im;
+            const depositPattern = /^Setoran\s*[:\-]?\s*(\d+)/im;
+            const profitPattern = /^Untung\s*[:\-]?\s*(\d+)/im;
+            const resiPattern = /(?:Resi|NoResi|Tracking)\s*[:\-]\s*([A-Z0-9]+)/i;
+
+            const nameMatch = raw.match(namePattern);
+            const waMatch = raw.match(waPattern);
+            const productMatch = raw.match(productPattern);
+            const priceMatch = raw.match(pricePattern);
+            const depositMatch = raw.match(depositPattern);
+            const profitMatch = raw.match(profitPattern);
+            const resiMatch = raw.match(resiPattern);
+
+            let detected = false;
+
+            if(nameMatch) { document.getElementById('nama').value = nameMatch[1].trim(); detected = true; }
+            if(waMatch) { document.getElementById('wa').value = waMatch[1].trim(); detected = true; }
+            if(productMatch) { document.getElementById('produk').value = productMatch[1].trim(); detected = true; }
+            if(priceMatch) { document.getElementById('harga').value = priceMatch[1]; detected = true; }
+            if(depositMatch) { document.getElementById('setoran').value = depositMatch[1]; detected = true; }
+            if(resiMatch) { document.getElementById('resi').value = resiMatch[1].trim(); detected = true; }
+
+            hitungUntung();
+
+            if(detected) {
+                indicator.classList.remove('hidden');
+                setTimeout(() => indicator.classList.add('hidden'), 2000);
+            }
+        }
+
+        function formatWA(number) {
+            let cleaned = String(number).replace(/\D/g, '');
+            if (cleaned.startsWith('0')) cleaned = '62' + cleaned.slice(1);
+            return cleaned;
+        }
+
         async function ambilData() {
-            loading(true, "Mengambil data terbaru...");
+            loading(true, "Sinkronisasi Cloud...");
             try {
                 const res = await fetch(`${WEB_APP_URL}?action=read&_=${Date.now()}`);
-                const data = await res.json();
-                render(data);
+                masterData = await res.json();
+                renderFiltered();
             } catch (e) {
-                console.error("Fetch Error:", e);
+                showToast("Gagal Sinkron!");
             } finally {
                 loading(false);
             }
         }
 
-        async function simpanData() {
-            const btn = document.getElementById('btnSimpan');
-            const payload = {
-                action: 'create',
-                nama: document.getElementById('nama').value.trim(),
-                wa: document.getElementById('wa').value.trim(),
-                produk: document.getElementById('produk').value.trim(),
-                tgl: document.getElementById('tgl').value,
-                ekspedisi: document.getElementById('kurir').value,
-                resi: document.getElementById('resi').value.trim(),
-                selesai: false
-            };
-
-            if(!payload.nama || !payload.resi) return alert("Nama dan Resi tidak boleh kosong!");
-
-            btn.disabled = true;
-            loading(true, "Mengirim data...");
-            
-            try {
-                await fetch(WEB_APP_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify(payload) 
-                });
-                
-                setTimeout(() => {
-                    ambilData();
-                    ['nama','wa','produk','resi'].forEach(id => document.getElementById(id).value = '');
-                    btn.disabled = false;
-                }, 2000);
-            } catch (e) {
-                btn.disabled = false;
-                loading(false);
-                alert("Terjadi kesalahan saat menyimpan.");
-            }
-        }
-
-        async function hapusData(resi) {
-            if(!confirm(`Hapus data dengan resi ${resi}?`)) return;
-            
-            loading(true, "Menghapus dari database...");
-            try {
-                await fetch(WEB_APP_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ action: 'delete', resi: String(resi).trim() }) 
-                });
-                
-                setTimeout(ambilData, 2000);
-            } catch (e) {
-                loading(false);
-                alert("Gagal menghapus.");
-            }
-        }
-
-        async function toggleSelesai(resi, statusSekarang) {
-            loading(true, "Memperbarui status...");
-            try {
-                await fetch(WEB_APP_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ action: 'update', resi: String(resi).trim(), selesai: !statusSekarang }) 
-                });
-                setTimeout(ambilData, 1500);
-            } catch (e) {
-                loading(false);
-            }
-        }
-
-        // FUNGSI BARU: LACAK RESI
-        function lacakResi(resi, kurir) {
-            let url = "";
-            const cleanResi = String(resi).trim();
-            
-            if (kurir === "POS") {
-                url = `https://www.posindonesia.co.id/id/tracking?resi=${cleanResi}`;
-            } else if (kurir === "SPX") {
-                url = `https://spx.co.id/track/${cleanResi}`;
-            } else {
-                url = `https://cekresi.com/?noresi=${cleanResi}`;
-            }
-            window.open(url, '_blank');
-        }
-
-        function render(data) {
+        function renderFiltered() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
             const container = document.querySelector('#tabelData tbody');
             const emptyState = document.getElementById('emptyState');
             
-            const validData = data.filter(item => item.nama && item.resi);
-            
-            document.getElementById('counter').innerText = `${validData.length} Order`;
+            const filtered = masterData.filter(item => 
+                (item.nama || '').toLowerCase().includes(search) || 
+                (item.resi || '').toLowerCase().includes(search)
+            );
+
+            document.getElementById('counter').innerText = `${filtered.length} ORDER`;
             container.innerHTML = '';
-            
-            if (validData.length === 0) {
+
+            if (filtered.length === 0) {
                 emptyState.classList.remove('hidden');
             } else {
                 emptyState.classList.add('hidden');
-                validData.forEach(item => {
+                filtered.forEach(item => {
                     const isDone = String(item.selesai).toUpperCase() === 'TRUE';
+                    const waLink = item.wa ? `https://wa.me/${formatWA(item.wa)}` : '#';
+                    
                     container.innerHTML += `
-                        <tr class="${isDone ? 'status-done' : ''} border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                            <td class="p-6">
+                        <tr class="${isDone ? 'status-done' : ''} hover:bg-slate-50 transition-all">
+                            <td class="px-6 py-5">
                                 <div class="font-bold text-slate-800 text-sm">${item.nama}</div>
-                                <div class="text-xs text-blue-600 font-medium">${item.wa || '-'}</div>
+                                <a href="${waLink}" target="_blank" class="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1">
+                                    <i class="fab fa-whatsapp"></i> ${item.wa || '-'}
+                                </a>
                             </td>
-                            <td class="p-6">
-                                <div class="text-xs text-slate-600 font-bold">${item.produk}</div>
-                                <div class="text-[10px] text-slate-400 font-mono mt-1">${item.ekspedisi} - ${item.resi}</div>
+                            <td class="px-6 py-5">
+                                <div class="text-xs font-bold text-slate-600">${item.produk}</div>
+                                <div class="flex gap-2 mt-1">
+                                    <span class="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-bold">H: ${item.harga || 0}</span>
+                                    <span class="text-[9px] bg-blue-50 px-1.5 py-0.5 rounded text-blue-600 font-bold">U: ${item.untung || 0}</span>
+                                </div>
+                                <div class="text-[10px] font-mono text-slate-400 mt-1 uppercase font-bold">${item.ekspedisi} - ${item.resi}</div>
                             </td>
-                            <td class="p-6 text-right">
+                            <td class="px-6 py-5 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <!-- Tombol Lacak Resi (BARU) -->
-                                    <button onclick="lacakResi('${item.resi}', '${item.ekspedisi}')" title="Lacak Perjalanan" class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white hover:scale-110 active:scale-95 transition-all">
-                                        <i class="fas fa-truck-fast text-xs"></i>
+                                    <button onclick="openTrack('${item.resi}', '${item.ekspedisi}', '${item.nama}')" class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:scale-110 transition-all">
+                                        <i class="fas fa-truck text-xs"></i>
                                     </button>
-                                    
-                                    <button onclick="toggleSelesai('${item.resi}', ${isDone})" title="Tandai Selesai" class="w-9 h-9 rounded-xl ${isDone ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'} flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+                                    <button onclick="toggleSelesai('${item.resi}', ${isDone})" class="w-9 h-9 rounded-xl ${isDone ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'} flex items-center justify-center hover:scale-110 transition-all">
                                         <i class="fas ${isDone ? 'fa-undo' : 'fa-check'} text-xs"></i>
                                     </button>
-                                    
-                                    <button onclick="hapusData('${item.resi}')" title="Hapus" class="w-9 h-9 rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+                                    <button onclick="hapusData('${item.resi}')" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center hover:scale-110 transition-all">
                                         <i class="fas fa-trash text-xs"></i>
                                     </button>
                                 </div>
@@ -257,8 +392,108 @@
             }
         }
 
-        document.getElementById('tgl').valueAsDate = new Date();
-        window.onload = ambilData;
+        async function simpanData() {
+            const payload = {
+                action: 'create',
+                nama: document.getElementById('nama').value.trim(),
+                wa: document.getElementById('wa').value.trim(),
+                produk: document.getElementById('produk').value.trim(),
+                harga: document.getElementById('harga').value,
+                setoran: document.getElementById('setoran').value,
+                untung: document.getElementById('untung').value,
+                tgl: document.getElementById('tgl').value,
+                ekspedisi: document.getElementById('kurir').value,
+                resi: document.getElementById('resi').value.trim(),
+                selesai: false
+            };
+
+            if(!payload.nama || !payload.resi) return alert("Nama & Resi wajib diisi!");
+
+            loading(true, "Menyimpan...");
+            try {
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+                showToast("Data Tersimpan!");
+                setTimeout(() => {
+                    ambilData();
+                    ['nama','wa','produk','resi','rawText','harga','setoran','untung'].forEach(id => document.getElementById(id).value = '');
+                    document.getElementById('tgl').valueAsDate = new Date();
+                }, 1000);
+            } catch (e) {
+                loading(false);
+            }
+        }
+
+        async function toggleSelesai(resi, statusSekarang) {
+            loading(true, "Update Status...");
+            try {
+                await fetch(WEB_APP_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify({ action: 'update', resi: String(resi).trim(), selesai: !statusSekarang }) 
+                });
+                setTimeout(ambilData, 1000);
+            } catch (e) { loading(false); }
+        }
+
+        async function hapusData(resi) {
+            if(!confirm("Hapus data ini?")) return;
+            loading(true, "Menghapus...");
+            try {
+                await fetch(WEB_APP_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    body: JSON.stringify({ action: 'delete', resi: String(resi).trim() }) 
+                });
+                setTimeout(ambilData, 1000);
+            } catch (e) { loading(false); }
+        }
+
+        function openTrack(resi, kurir, nama) {
+            const cleanResi = String(resi).trim();
+            const el = document.createElement('textarea');
+            el.value = cleanResi;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            currentActiveResi = cleanResi;
+            
+            document.getElementById('modalTitle').innerText = nama;
+            document.getElementById('modalSubtitle').innerText = `${kurir} - ${cleanResi}`;
+            document.getElementById('iframeLoader').style.display = 'flex';
+            
+            let url = "";
+            const k = kurir.toUpperCase();
+            if (k.includes("POS")) url = `https://www.posindonesia.co.id/id/tracking?resi=${cleanResi}`;
+            else if (k.includes("SPX")) url = `https://spx.co.id/track/${cleanResi}`;
+            else url = `https://cekresi.com/?noresi=${cleanResi}`;
+
+            document.getElementById('trackFrame').src = url;
+            document.getElementById('modalTrack').style.display = 'flex';
+            showToast("Resi disalin otomatis!");
+        }
+
+        function copyCurrentResi() {
+            if(currentActiveResi) {
+                const el = document.createElement('textarea');
+                el.value = currentActiveResi;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showToast("Berhasil disalin!");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modalTrack').style.display = 'none';
+            document.getElementById('trackFrame').src = "";
+        }
+
+        window.onload = () => {
+            document.getElementById('tgl').valueAsDate = new Date();
+            ambilData();
+        };
     </script>
 </body>
 </html>
