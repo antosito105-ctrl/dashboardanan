@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Order Parfum App - Full Control</title>
+    <title>Order Parfum App - Realtime Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -11,13 +11,16 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .spinner { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.7); z-index: 100; align-items: center; justify-content: center; }
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 10px; }
+        .order-done { opacity: 0.6; background-color: #f0fdf4 !important; }
+        .order-done .text-content { text-decoration: line-through; }
     </style>
 </head>
 <body class="p-4 md:p-8">
-    <!-- Overlay Loading saat hapus data -->
+    <!-- Overlay Loading Global -->
     <div id="loader" class="loading-overlay">
-        <i class="fas fa-circle-notch spinner text-3xl text-blue-600"></i>
+        <i class="fas fa-circle-notch spinner text-4xl text-blue-600"></i>
+        <p class="text-sm font-bold text-slate-600">Menyinkronkan Data...</p>
     </div>
 
     <div class="max-w-5xl mx-auto">
@@ -26,11 +29,11 @@
                 <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
                     Order Parfum 📦
                 </h1>
-                <p class="text-slate-500 mt-1">Full Control: Tambah & Hapus Terkoneksi Sheets</p>
+                <p class="text-slate-500 mt-1">Data Realtime dari Google Sheets</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="fetchDataDariSheet()" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-2 font-bold shadow-lg shadow-blue-100">
-                    <i class="fas fa-sync-alt" id="syncIcon"></i> Sinkron Data
+                <button onclick="fetchDataDariSheet()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 transition flex items-center gap-2 font-bold shadow-lg shadow-blue-200">
+                    <i class="fas fa-sync-alt" id="syncIcon"></i> Refresh Data
                 </button>
             </div>
         </header>
@@ -39,11 +42,13 @@
             <!-- Form Input -->
             <div class="lg:col-span-1">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 sticky top-8">
-                    <h2 class="text-lg font-semibold mb-4 text-slate-800 text-center">Input Pesanan</h2>
+                    <h2 class="text-lg font-semibold mb-4 text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-edit text-blue-500"></i> Input Pesanan
+                    </h2>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-400 mb-1">Nama Pembeli</label>
-                            <input type="text" id="nama" placeholder="Masukkan nama..." class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                            <input type="text" id="nama" placeholder="Nama pelanggan..." class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-400 mb-1">Nomor WA</label>
@@ -51,7 +56,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-400 mb-1">Nama Produk</label>
-                            <input type="text" id="produk" placeholder="Contoh: Blue Aqua 50ml" class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="produk" placeholder="Varian parfum..." class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -64,16 +69,16 @@
                                     <option value="jne">JNE</option>
                                     <option value="jnt">J&T</option>
                                     <option value="sicepat">SiCepat</option>
-                                    <option value="shopee">Shopee Express</option>
+                                    <option value="shopee">SPX</option>
                                 </select>
                             </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-400 mb-1">Nomor Resi</label>
-                            <input type="text" id="resi" placeholder="Masukkan resi..." class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" id="resi" placeholder="Resi pengiriman..." class="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <button id="btnSimpan" onclick="tambahOrder()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 transition flex justify-center items-center gap-2">
-                            <i class="fas fa-save"></i> Simpan ke Sheets
+                            <i class="fas fa-paper-plane"></i> Kirim ke Sheets
                         </button>
                     </div>
                 </div>
@@ -82,25 +87,25 @@
             <!-- List Data -->
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
-                        <h2 class="font-bold text-slate-700">Daftar Pesanan</h2>
+                    <div class="px-6 py-4 bg-white border-b border-slate-100 flex justify-between items-center">
+                        <h2 class="font-bold text-slate-700">Database Pesanan</h2>
+                        <span id="orderCount" class="text-[11px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold border border-blue-100">0 Order</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left" id="tabelOrder">
                             <thead class="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold">
                                 <tr>
-                                    <th class="px-6 py-4">Pembeli</th>
-                                    <th class="px-6 py-4">Produk & Resi</th>
-                                    <th class="px-6 py-4 text-right">Aksi</th>
+                                    <th class="px-6 py-4">Informasi Pembeli</th>
+                                    <th class="px-6 py-4">Detail Paket</th>
+                                    <th class="px-6 py-4 text-right">Kontrol</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100"></tbody>
                         </table>
                     </div>
-                    <div id="emptyState" class="p-16 text-center text-slate-400 hidden">
-                        <i class="fas fa-inbox text-4xl mb-3 block"></i>
-                        <p class="text-sm">Belum ada data pesanan.</p>
-                        <p class="text-[10px]">Klik tombol "Sinkron Data" untuk menyegarkan.</p>
+                    <div id="emptyState" class="p-20 text-center text-slate-400 hidden">
+                        <i class="fas fa-cloud-download-alt text-4xl mb-4 block opacity-20"></i>
+                        <p class="text-sm font-medium">Data tidak ditemukan di database</p>
                     </div>
                 </div>
             </div>
@@ -108,13 +113,13 @@
     </div>
 
     <!-- Toast Notifikasi -->
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 bg-slate-900 text-white px-6 py-3 rounded-xl transition-all duration-300 z-50 text-sm shadow-xl flex items-center gap-2"></div>
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 translate-y-20 opacity-0 bg-slate-900 text-white px-6 py-3 rounded-2xl transition-all duration-300 z-50 text-sm shadow-2xl flex items-center gap-3"></div>
 
     <script>
-        // URL SCRIPT GOOGLE KAMU (SUDAH TERPASANG)
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxGi7_rQQxySpZr_QRY1wQfIx3eZbW3IMMMfcLHoLVbDLNrOEloV3KTqEQ6taRbl6yLPQ/exec';
+        // GANTI DENGAN URL WEB APP GOOGLE SCRIPT KAMU
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoQ9WTWoTbEuc8wK20_j6PIHFBM9xxy993waOeF0uc2txCMzROywWgvtMkehdFYwuEHA/exec';
 
-        let dataOrder = JSON.parse(localStorage.getItem('dataParfum') || '[]');
+        let dataOrder = [];
 
         function showLoading(show) {
             document.getElementById('loader').style.display = show ? 'flex' : 'none';
@@ -123,26 +128,27 @@
         function showToast(msg, isError = false) {
             const toast = document.getElementById('toast');
             toast.innerHTML = isError ? `<i class="fas fa-times-circle text-red-400"></i> ${msg}` : `<i class="fas fa-check-circle text-green-400"></i> ${msg}`;
-            toast.style.backgroundColor = isError ? '#ef4444' : '#0f172a';
+            toast.style.border = isError ? '1px solid #ef4444' : '1px solid #10b981';
             toast.classList.remove('translate-y-20', 'opacity-0');
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
 
+        // AMBIL DATA REALTIME DARI SPREADSHEET
         async function fetchDataDariSheet() {
             const icon = document.getElementById('syncIcon');
             icon.classList.add('spinner');
+            
             try {
-                const res = await fetch(SCRIPT_URL + '?action=read');
-                const data = await res.json();
+                // Gunakan cache buster agar browser tidak mengambil data lama
+                const response = await fetch(`${SCRIPT_URL}?action=read&nocache=${new Date().getTime()}`);
+                const data = await response.json();
+                
                 if (Array.isArray(data)) {
                     dataOrder = data;
-                    localStorage.setItem('dataParfum', JSON.stringify(dataOrder));
                     renderTabel();
-                    showToast('Data berhasil disinkronkan!');
                 }
             } catch (e) {
-                console.error(e);
-                showToast('Gagal sinkron data online', true);
+                showToast('Gagal terhubung ke database', true);
             } finally {
                 icon.classList.remove('spinner');
             }
@@ -150,57 +156,71 @@
 
         async function tambahOrder() {
             const btn = document.getElementById('btnSimpan');
-            const inputs = {
-                nama: document.getElementById('nama'),
-                wa: document.getElementById('wa'),
-                produk: document.getElementById('produk'),
-                resi: document.getElementById('resi'),
-                tgl: document.getElementById('tgl'),
-                ekspedisi: document.getElementById('ekspedisi')
-            };
-
             const payload = {
                 action: 'create',
-                nama: inputs.nama.value,
-                wa: inputs.wa.value,
-                produk: inputs.produk.value,
-                tgl: inputs.tgl.value,
-                ekspedisi: inputs.ekspedisi.value,
-                resi: inputs.resi.value,
+                nama: document.getElementById('nama').value,
+                wa: document.getElementById('wa').value,
+                produk: document.getElementById('produk').value,
+                tgl: document.getElementById('tgl').value,
+                ekspedisi: document.getElementById('ekspedisi').value,
+                resi: document.getElementById('resi').value,
                 selesai: false
             };
 
             if (!payload.nama || !payload.resi) return showToast('Nama & Resi wajib diisi!', true);
 
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner spinner"></i> Mengirim ke Sheets...';
+            btn.innerHTML = '<i class="fas fa-circle-notch spinner"></i> Mengirim...';
 
             try {
-                // Kirim data ke Google Sheets
+                // Kirim data menggunakan mode: 'no-cors' untuk menghindari masalah CORS di Web App
+                await fetch(SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    cache: 'no-cache',
+                    body: JSON.stringify(payload) 
+                });
+                
+                showToast('Data berhasil disimpan ke database!');
+                ['nama', 'wa', 'produk', 'resi'].forEach(id => document.getElementById(id).value = '');
+                
+                // Tunggu sebentar lalu refresh data agar dashboard update
+                setTimeout(fetchDataDariSheet, 2000);
+            } catch (e) {
+                showToast('Gagal mengirim data', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim ke Sheets';
+            }
+        }
+
+        async function updateStatusSelesai(index) {
+            const order = dataOrder[index];
+            showLoading(true);
+            try {
+                // Logika toggle status
+                const currentStatus = (order.selesai === true || order.selesai === "TRUE");
+                
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        action: 'update',
+                        resi: order.resi,
+                        selesai: !currentStatus
+                    })
                 });
-                
-                showToast('Terkirim! Memperbarui list...');
-                
-                // Reset form
-                ['nama', 'wa', 'produk', 'resi'].forEach(id => document.getElementById(id).value = '');
-                
-                // Tunggu sebentar lalu tarik data terbaru
+                showToast('Status pesanan diperbarui');
                 setTimeout(fetchDataDariSheet, 1500);
             } catch (e) {
-                showToast('Gagal kirim online', true);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> Simpan ke Sheets';
+                showToast('Gagal update status', true);
+                showLoading(false);
             }
         }
 
         async function hapusOrderOnline(index) {
             const order = dataOrder[index];
-            if(!confirm(`Hapus pesanan atas nama "${order.nama}" secara permanen di Google Sheets?`)) return;
+            if(!confirm(`⚠️ HAPUS PERMANEN?\n\nPesanan atas nama "${order.nama}" akan dihapus dari Google Sheets.`)) return;
 
             showLoading(true);
             try {
@@ -212,13 +232,10 @@
                         resi: order.resi
                     })
                 });
-                
-                showToast('Menghapus di database Sheets...');
-                // Jeda sebentar agar Sheets memproses hapus baris
-                setTimeout(fetchDataDariSheet, 1500);
+                showToast('Data sedang dihapus...');
+                setTimeout(fetchDataDariSheet, 2000);
             } catch (e) {
-                showToast('Gagal menghapus data online', true);
-            } finally {
+                showToast('Gagal menghapus data', true);
                 showLoading(false);
             }
         }
@@ -226,44 +243,54 @@
         function renderTabel() {
             const tbody = document.querySelector('#tabelOrder tbody');
             const emptyState = document.getElementById('emptyState');
+            const countBadge = document.getElementById('orderCount');
             tbody.innerHTML = '';
-            
+            countBadge.innerText = `${dataOrder.length} Order`;
+
             if (dataOrder.length === 0) {
                 emptyState.classList.remove('hidden');
             } else {
                 emptyState.classList.add('hidden');
                 dataOrder.forEach((o, i) => {
+                    const isDone = (o.selesai === true || o.selesai === "TRUE");
+                    const rowClass = isDone ? 'order-done' : '';
+                    const checkIcon = isDone ? 'fa-undo' : 'fa-check';
+                    const checkColor = isDone ? 'text-orange-500 bg-orange-50' : 'text-green-600 bg-green-50';
+
                     tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors">
+                    <tr class="${rowClass} hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4">
-                            <div class="font-bold text-slate-800 text-sm">${o.nama}</div>
-                            <div class="text-[11px] text-blue-500 font-medium">${o.wa}</div>
+                            <div class="font-bold text-slate-800 text-sm text-content">${o.nama}</div>
+                            <div class="text-[11px] text-blue-500 font-semibold italic">${o.wa || '-'}</div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-xs text-slate-600">${o.produk}</div>
-                            <div class="text-[10px] text-slate-400 font-mono tracking-tight">
-                                <span class="bg-slate-100 px-1 rounded text-[9px] font-bold text-slate-500">${o.ekspedisi.toUpperCase()}</span> ${o.resi}
+                            <div class="text-xs text-slate-600 text-content font-medium">${o.produk}</div>
+                            <div class="text-[10px] text-slate-400 font-mono mt-1">
+                                <span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">${o.ekspedisi.toUpperCase()}</span> ${o.resi}
                             </div>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <button onclick="hapusOrderOnline(${i})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center ml-auto">
-                                <i class="fas fa-trash-alt text-xs"></i>
-                            </button>
+                            <div class="flex justify-end gap-2">
+                                <button onclick="updateStatusSelesai(${i})" class="w-9 h-9 rounded-xl ${checkColor} hover:scale-105 transition-all flex items-center justify-center" title="Ubah Status">
+                                    <i class="fas ${checkIcon} text-xs"></i>
+                                </button>
+                                <button onclick="hapusOrderOnline(${i})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center" title="Hapus">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>`;
                 });
             }
-            localStorage.setItem('dataParfum', JSON.stringify(dataOrder));
+            showLoading(false);
         }
 
-        // Set tanggal default hari ini
+        // Set tanggal hari ini & Ambil data saat aplikasi dibuka
         document.getElementById('tgl').valueAsDate = new Date();
-        
-        // Render awal dari data lokal
-        renderTabel();
-        
-        // Langsung sinkron saat website dibuka
-        window.onload = fetchDataDariSheet;
+        window.addEventListener('load', () => {
+            showLoading(true);
+            fetchDataDariSheet();
+        });
     </script>
 </body>
 </html>
