@@ -397,6 +397,8 @@
 
      let isSaving = false;
 
+let isSaving = false;
+
 async function simpanData() {
 
     if (isSaving) return;
@@ -415,14 +417,21 @@ async function simpanData() {
         selesai: false
     };
 
-    if (!payload.nama || !payload.resi) {
-        alert("Nama & Resi wajib diisi!");
+    // VALIDASI LENGKAP
+    if (
+        !payload.nama ||
+        !payload.wa ||
+        !payload.produk ||
+        !payload.resi
+    ) {
+        alert("Data belum lengkap!");
         return;
     }
 
     isSaving = true;
 
     const btn = document.getElementById('btnSimpan');
+
     btn.disabled = true;
     btn.innerHTML = 'MENYIMPAN...';
 
@@ -438,18 +447,22 @@ async function simpanData() {
 
         showToast("Data Tersimpan!");
 
-        ['nama','wa','produk','resi','rawText','harga','setoran','untung'].forEach(id => {
+        // RESET FORM
+        ['nama','wa','produk','resi','rawText','harga','setoran','untung']
+        .forEach(id => {
             document.getElementById(id).value = '';
         });
 
         document.getElementById('tgl').valueAsDate = new Date();
 
+        // REFRESH DATA
         setTimeout(() => {
             ambilData();
         }, 1000);
 
     } catch (e) {
 
+        console.log(e);
         showToast("Gagal menyimpan");
 
     } finally {
