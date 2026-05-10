@@ -357,7 +357,7 @@
             } else {
                 emptyState.classList.add('hidden');
                 filtered.forEach(item => {
-                    const isDone = String(item.selesai).toUpperCase() === 'TRUE';
+                    const isDone = String(item.selesai).toUpperCase() === 'SELESAI';
                     const waLink = item.wa ? `https://wa.me/${formatWA(item.wa)}` : '#';
                     
                     container.innerHTML += `
