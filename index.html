@@ -474,15 +474,13 @@ async function simpanData() {
     }
 }
 
-        async function toggleSelesai(resi, statusSekarang) {
-   loading(true, "Update Status...");
+async function toggleSelesai(resi, statusSekarang) {
 
-    const statusBaru =
-        String(statusSekarang).toUpperCase() === 'SELESAI'
-        ? 'PROSES'
-        : 'SELESAI';
+    loading(true, "Update Status...");
 
     try {
+
+        const statusBaru = statusSekarang ? 'Proses' : 'Selesai';
 
         await fetch(WEB_APP_URL, {
             method: 'POST',
@@ -494,13 +492,16 @@ async function simpanData() {
             })
         });
 
-        setTimeout(ambilData, 1000);
+        setTimeout(() => {
+            ambilData();
+        }, 1000);
 
     } catch (e) {
 
         loading(false);
 
     }
+}
 }
         function openTrack(resi, kurir, nama) {
             const cleanResi = String(resi).trim();
