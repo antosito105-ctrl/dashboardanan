@@ -475,30 +475,33 @@ async function simpanData() {
 }
 
         async function toggleSelesai(resi, statusSekarang) {
-            loading(true, "Update Status...");
-            try {
-                await fetch(WEB_APP_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ action: 'update', resi: String(resi).trim(), selesai: !statusSekarang }) 
-                });
-                setTimeout(ambilData, 1000);
-            } catch (e) { loading(false); }
-        }
+   loading(true, "Update Status...");
 
-        async function hapusData(resi) {
-            if(!confirm("Hapus data ini?")) return;
-            loading(true, "Menghapus...");
-            try {
-                await fetch(WEB_APP_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors', 
-                    body: JSON.stringify({ action: 'delete', resi: String(resi).trim() }) 
-                });
-                setTimeout(ambilData, 1000);
-            } catch (e) { loading(false); }
-        }
+    const statusBaru =
+        String(statusSekarang).toUpperCase() === 'SELESAI'
+        ? 'PROSES'
+        : 'SELESAI';
 
+    try {
+
+        await fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: 'update',
+                resi: String(resi).trim(),
+                selesai: statusBaru
+            })
+        });
+
+        setTimeout(ambilData, 1000);
+
+    } catch (e) {
+
+        loading(false);
+
+    }
+}
         function openTrack(resi, kurir, nama) {
             const cleanResi = String(resi).trim();
             const el = document.createElement('textarea');
