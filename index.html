@@ -395,36 +395,73 @@
             }
         }
 
-        async function simpanData() {
-            const payload = {
-                action: 'create',
-                nama: document.getElementById('nama').value.trim(),
-                wa: document.getElementById('wa').value.trim(),
-                produk: document.getElementById('produk').value.trim(),
-                harga: document.getElementById('harga').value,
-                setoran: document.getElementById('setoran').value,
-                untung: document.getElementById('untung').value,
-                tgl: document.getElementById('tgl').value,
-                ekspedisi: document.getElementById('kurir').value,
-                resi: document.getElementById('resi').value.trim(),
-                selesai: false
-            };
+     let isSaving = false;
 
-            if(!payload.nama || !payload.resi) return alert("Nama & Resi wajib diisi!");
+async function simpanData() {
 
-            loading(true, "Menyimpan...");
-            try {
-                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-                showToast("Data Tersimpan!");
-                setTimeout(() => {
-                    ambilData();
-                    ['nama','wa','produk','resi','rawText','harga','setoran','untung'].forEach(id => document.getElementById(id).value = '');
-                    document.getElementById('tgl').valueAsDate = new Date();
-                }, 1000);
-            } catch (e) {
-                loading(false);
-            }
-        }
+    if (isSaving) return;
+
+    const payload = {
+        action: 'create',
+        nama: document.getElementById('nama').value.trim(),
+        wa: document.getElementById('wa').value.trim(),
+        produk: document.getElementById('produk').value.trim(),
+        harga: document.getElementById('harga').value,
+        setoran: document.getElementById('setoran').value,
+        untung: document.getElementById('untung').value,
+        tgl: document.getElementById('tgl').value,
+        ekspedisi: document.getElementById('kurir').value,
+        resi: document.getElementById('resi').value.trim(),
+        selesai: false
+    };
+
+    if (!payload.nama || !payload.resi) {
+        alert("Nama & Resi wajib diisi!");
+        return;
+    }
+
+    isSaving = true;
+
+    const btn = document.getElementById('btnSimpan');
+    btn.disabled = true;
+    btn.innerHTML = 'MENYIMPAN...';
+
+    loading(true, "Menyimpan...");
+
+    try {
+
+        await fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify(payload)
+        });
+
+        showToast("Data Tersimpan!");
+
+        ['nama','wa','produk','resi','rawText','harga','setoran','untung'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+
+        document.getElementById('tgl').valueAsDate = new Date();
+
+        setTimeout(() => {
+            ambilData();
+        }, 1000);
+
+    } catch (e) {
+
+        showToast("Gagal menyimpan");
+
+    } finally {
+
+        loading(false);
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> SIMPAN PESANAN';
+
+        isSaving = false;
+    }
+}
 
         async function toggleSelesai(resi, statusSekarang) {
             loading(true, "Update Status...");
