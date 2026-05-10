@@ -10,8 +10,15 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f0f4f8; color: #1e293b; }
         .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        
+        /* STATUS SELESAI (HIJAU) */
         .status-done { background: #dcfce7 !important; }
         .status-done td { color: #166534 !important; }
+
+        /* STATUS RETUR (MERAH MUDA, BUKAN BOLD) */
+        .status-return { background: #fee2e2 !important; }
+        .status-return td { color: #991b1b !important; font-weight: 500 !important; }
+
         #modalTrack { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); z-index: 1000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(12px); }
         .modal-content { background: white; width: 100%; max-width: 1000px; height: 85vh; border-radius: 28px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
         #toast { visibility: hidden; min-width: 280px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 16px; padding: 16px; position: fixed; z-index: 1100; left: 50%; bottom: 40px; transform: translateX(-50%); font-size: 14px; font-weight: 600; }
@@ -181,13 +188,37 @@
             else {
                 emptyState.classList.add('hidden');
                 filtered.forEach((item, idx) => {
-                    // CARI INDEX ASLI DI MASTERDATA (untuk referensi hapus)
                     const masterIdx = masterData.indexOf(item);
-                    const isDone = String(item.selesai).toUpperCase() === 'SELESAI';
+                    const statusUpper = String(item.selesai).toUpperCase();
+                    
+                    // CEK STATUS
+                    const isDone = statusUpper === 'SELESAI';
+                    const isReturn = statusUpper === 'RETURN';
+
+                    // KELAS WARNA BARIS
+                    let rowClass = '';
+                    if (isReturn) rowClass = 'status-return';
+                    else if (isDone) rowClass = 'status-done';
+
+                    // LOGIKA TOMBOL SELESAI / PROSES
+                    let toggleIcon = 'fa-check';
+                    let toggleColor = 'bg-green-100 text-green-600';
+                    let nextStatus = 'Selesai';
+
+                    if (isDone) {
+                        toggleIcon = 'fa-undo';
+                        toggleColor = 'bg-orange-100 text-orange-600';
+                        nextStatus = 'Proses';
+                    } else if (isReturn) {
+                        toggleIcon = 'fa-undo';
+                        toggleColor = 'bg-slate-100 text-slate-600';
+                        nextStatus = 'Proses';
+                    }
+
                     const waLink = item.wa ? `https://wa.me/${formatWA(item.wa)}` : '#';
                     
                     container.innerHTML += `
-                        <tr class="${isDone ? 'status-done' : ''} hover:bg-slate-50 transition-all">
+                        <tr class="${rowClass} hover:bg-slate-50 transition-all">
                             <td class="px-6 py-5">
                                 <div class="font-bold text-slate-800 text-sm">${escapeHtml(item.nama)}</div>
                                 <a href="${waLink}" target="_blank" class="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1"><i class="fab fa-whatsapp"></i> ${escapeHtml(item.wa) || '-'}</a>
@@ -202,9 +233,13 @@
                             </td>
                             <td class="px-6 py-5 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <button onclick="openTrack(${masterIdx})" class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:scale-110 transition-all"><i class="fas fa-truck text-xs"></i></button>
-                                    <button onclick="toggleSelesai(${masterIdx})" class="w-9 h-9 rounded-xl ${isDone ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'} flex items-center justify-center hover:scale-110 transition-all"><i class="fas ${isDone ? 'fa-undo' : 'fa-check'} text-xs"></i></button>
-                                    <button onclick="konfirmasiHapus(${masterIdx})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center hover:scale-110 transition-all"><i class="fas fa-trash text-xs"></i></button>
+                                    <button onclick="openTrack(${masterIdx})" class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:scale-110 transition-all" title="Cek Resi"><i class="fas fa-truck text-xs"></i></button>
+                                    
+                                    <button onclick="returData(${masterIdx})" class="w-9 h-9 rounded-xl ${isReturn ? 'bg-red-500 text-white' : 'bg-red-50 text-red-400'} flex items-center justify-center hover:scale-110 transition-all" title="Retur"><i class="fas fa-reply text-xs"></i></button>
+
+                                    <button onclick="toggleSelesai(${masterIdx}, '${nextStatus}')" class="w-9 h-9 rounded-xl ${toggleColor} flex items-center justify-center hover:scale-110 transition-all" title="${nextStatus}"><i class="fas ${toggleIcon} text-xs"></i></button>
+                                    
+                                    <button onclick="konfirmasiHapus(${masterIdx})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center hover:scale-110 transition-all" title="Hapus"><i class="fas fa-trash text-xs"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -225,21 +260,33 @@
             } catch (e) { showToast("Gagal menyimpan"); } finally { loading(false); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> SIMPAN PESANAN'; isSaving = false; }
         }
 
-        async function toggleSelesai(idx) {
+        async function toggleSelesai(idx, nextStatus) {
             const item = masterData[idx]; if(!item) return;
-            const statusBaru = String(item.selesai).toUpperCase() === 'SELESAI' ? 'Proses' : 'Selesai';
             loading(true, "Update Status...");
             try {
-                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', resi: String(item.resi).trim(), selesai: statusBaru }) });
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', resi: String(item.resi).trim(), selesai: nextStatus }) });
                 setTimeout(() => ambilData(), 1500);
-            } catch (e) { showToast("Gagal update"); loading(false); }
+            } catch (e) { showToast("Gagal update status"); loading(false); }
         }
 
-        // FUNGSI HAPUS BARU - MENGGUNAKAN INDEX AMAN
+        async function returData(idx) {
+            const item = masterData[idx]; if(!item) return;
+            if (confirm("Tandai pesanan ini sebagai RETUR?")) {
+                loading(true, "Update Retur...");
+                try {
+                    await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', resi: String(item.resi).trim(), selesai: 'RETURN' }) });
+                    showToast("Pesanan ditandai RETUR!");
+                    setTimeout(() => ambilData(), 1500);
+                } catch (e) {
+                    showToast("Gagal update retur");
+                    loading(false);
+                }
+            }
+        }
+
         function konfirmasiHapus(idx) {
             const item = masterData[idx];
             if (!item) { showToast("Data tidak ditemukan!"); return; }
-            
             if (confirm("Yakin hapus pesanan resi: " + item.resi + "?")) {
                 prosesHapus(String(item.resi).trim());
             }
@@ -247,22 +294,10 @@
 
         async function prosesHapus(resi) {
             loading(true, "Menghapus Data...");
-            console.log("Mengirim permintaan hapus untuk resi:", resi); // Debug di Inspect Element
-            
             try {
-                await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain' }, // Tambahan penting untuk no-cors
-                    body: JSON.stringify({ action: 'delete', resi: resi })
-                });
-                showToast("Permintaan hapus terkirim. Menunggu server...");
-                
-                // Kasih waktu 3 detik agar Google Spreadsheet selesai menghapus baris
-                setTimeout(() => {
-                    ambilData();
-                }, 3000);
-                
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete', resi: resi }) });
+                showToast("Permintaan hapus terkirim...");
+                setTimeout(() => { ambilData(); }, 3000);
             } catch (e) {
                 console.error("Error hapus:", e);
                 showToast("Gagal mengirim permintaan hapus");
