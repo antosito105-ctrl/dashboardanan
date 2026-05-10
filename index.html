@@ -8,101 +8,34 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f0f4f8; 
-            color: #1e293b;
-        }
-
-        .loading-overlay { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            background: rgba(15, 23, 42, 0.6); 
-            z-index: 100; 
-            align-items: center; 
-            justify-content: center; 
-            backdrop-filter: blur(4px); 
-        }
-
-.status-done {
-   background: #dcfce7 !important;
-}
-
-.status-done td {
-   color: #166534 !important;
-}
-
-        #modalTrack { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            background: rgba(15, 23, 42, 0.8); 
-            z-index: 1000; 
-            align-items: center; 
-            justify-content: center; 
-            padding: 16px; 
-            backdrop-filter: blur(12px); 
-        }
-
-        .modal-content { 
-            background: white; 
-            width: 100%; 
-            max-width: 1000px; 
-            height: 85vh; 
-            border-radius: 28px; 
-            overflow: hidden; 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-        }
-
-        #toast { 
-            visibility: hidden; 
-            min-width: 280px; 
-            background-color: #1e293b; 
-            color: #fff; 
-            text-align: center; 
-            border-radius: 16px; 
-            padding: 16px; 
-            position: fixed; 
-            z-index: 1100; 
-            left: 50%; 
-            bottom: 40px; 
-            transform: translateX(-50%); 
-            font-size: 14px; 
-            font-weight: 600; 
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f0f4f8; color: #1e293b; }
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .status-done { background: #dcfce7 !important; }
+        .status-done td { color: #166534 !important; }
+        #modalTrack { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); z-index: 1000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(12px); }
+        .modal-content { background: white; width: 100%; max-width: 1000px; height: 85vh; border-radius: 28px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        #toast { visibility: hidden; min-width: 280px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 16px; padding: 16px; position: fixed; z-index: 1100; left: 50%; bottom: 40px; transform: translateX(-50%); font-size: 14px; font-weight: 600; }
         #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
         @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 40px; opacity: 1; } }
         @keyframes fadeout { from { bottom: 40px; opacity: 1; } to { bottom: 0; opacity: 0; } }
-
-        .magic-input:focus {
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-        }
+        .magic-input:focus { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div id="toast">Notifikasi</div>
 
-    <!-- Modal Pelacakan -->
     <div id="modalTrack" onclick="if(event.target === this) closeModal()">
         <div class="modal-content">
             <div class="p-5 bg-white border-b flex justify-between items-center">
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                        <i class="fas fa-shipping-fast text-xl"></i>
-                    </div>
+                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600"><i class="fas fa-shipping-fast text-xl"></i></div>
                     <div>
                         <h3 class="font-extrabold text-slate-800 leading-tight" id="modalTitle">Lacak Pesanan</h3>
                         <p class="text-xs text-blue-600 font-bold tracking-widest uppercase" id="modalSubtitle"></p>
                     </div>
                 </div>
-                <button onclick="closeModal()" class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-red-50 hover:text-red-600 transition-all">
-                    <i class="fas fa-times text-lg"></i>
-                </button>
+                <button onclick="closeModal()" class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-red-50 hover:text-red-600 transition-all"><i class="fas fa-times text-lg"></i></button>
             </div>
             <div class="flex-1 bg-slate-50 relative">
                 <div id="iframeLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-10">
@@ -117,7 +50,6 @@
         </div>
     </div>
 
-    <!-- Loader -->
     <div id="loader" class="loading-overlay flex-col gap-6">
         <div class="bg-white p-8 rounded-3xl flex flex-col items-center shadow-2xl">
             <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -132,19 +64,14 @@
                 <p class="text-slate-500 font-medium">Input otomatis dengan Smart Parser</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="ambilData()" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all">
-                    <i class="fas fa-sync-alt text-blue-600"></i>
-                </button>
+                <button onclick="ambilData()" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all"><i class="fas fa-sync-alt text-blue-600"></i></button>
             </div>
         </header>
 
-        <!-- TOP SECTION: SMART PARSER -->
         <div class="mb-8">
             <div class="bg-white p-6 rounded-[32px] shadow-sm border border-slate-200">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-magic"></i>
-                    </div>
+                    <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center"><i class="fas fa-magic"></i></div>
                     <div>
                         <h2 class="font-extrabold text-slate-800">Smart Parser (Input Otomatis)</h2>
                         <p class="text-xs text-slate-400">Tempel chat format pesanan di sini</p>
@@ -152,107 +79,55 @@
                 </div>
                 <div class="relative">
                     <textarea id="rawText" rows="4" oninput="parseData()" placeholder="Tempel format pesanan di sini..." class="magic-input w-full p-5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 outline-none focus:border-blue-400 transition-all font-medium text-sm"></textarea>
-                    <div id="parseIndicator" class="hidden absolute right-4 bottom-4 bg-green-500 text-white px-3 py-1 rounded-full text-[10px] font-bold animate-bounce">
-                        DATA TERBACA!
-                    </div>
+                    <div id="parseIndicator" class="hidden absolute right-4 bottom-4 bg-green-500 text-white px-3 py-1 rounded-full text-[10px] font-bold animate-bounce">DATA TERBACA!</div>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Form Section -->
             <div class="lg:col-span-4">
                 <div class="bg-white p-8 rounded-[32px] shadow-sm border border-slate-200 sticky top-10">
-                    <h2 class="font-extrabold text-xl text-slate-800 mb-6 flex items-center gap-3">
-                        Konfirmasi Data
-                    </h2>
-                    
+                    <h2 class="font-extrabold text-xl text-slate-800 mb-6 flex items-center gap-3">Konfirmasi Data</h2>
                     <div class="space-y-4">
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nama Pembeli</label>
-                            <input type="text" id="nama" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                        </div>
+                        <div><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nama Pembeli</label><input type="text" id="nama" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
                         <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nomor WhatsApp</label>
-                                <input type="text" id="wa" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nama Produk</label>
-                                <input type="text" id="produk" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                            </div>
+                            <div><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nomor WhatsApp</label><input type="text" id="wa" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
+                            <div><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nama Produk</label><input type="text" id="produk" class="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
                         </div>
-
-                        <!-- Data Keuangan -->
                         <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl">
-                            <div>
-                                <label class="text-[9px] font-bold text-slate-400 uppercase">Harga</label>
-                                <input type="number" id="harga" oninput="hitungUntung()" class="w-full p-2 bg-white rounded-lg border border-slate-200 outline-none text-sm font-bold">
-                            </div>
-                            <div>
-                                <label class="text-[9px] font-bold text-slate-400 uppercase">Setoran</label>
-                                <input type="number" id="setoran" oninput="hitungUntung()" class="w-full p-2 bg-white rounded-lg border border-slate-200 outline-none text-sm font-bold">
-                            </div>
-                            <div>
-                                <label class="text-[9px] font-bold text-blue-600 uppercase">Untung</label>
-                                <input type="number" id="untung" readonly class="w-full p-2 bg-blue-100 rounded-lg border-none outline-none text-sm font-black text-blue-700">
-                            </div>
+                            <div><label class="text-[9px] font-bold text-slate-400 uppercase">Harga</label><input type="number" id="harga" oninput="hitungUntung()" class="w-full p-2 bg-white rounded-lg border border-slate-200 outline-none text-sm font-bold"></div>
+                            <div><label class="text-[9px] font-bold text-slate-400 uppercase">Setoran</label><input type="number" id="setoran" oninput="hitungUntung()" class="w-full p-2 bg-white rounded-lg border border-slate-200 outline-none text-sm font-bold"></div>
+                            <div><label class="text-[9px] font-bold text-blue-600 uppercase">Untung</label><input type="number" id="untung" readonly class="w-full p-2 bg-blue-100 rounded-lg border-none outline-none text-sm font-black text-blue-700"></div>
                         </div>
-
                         <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tanggal</label>
-                                <input type="date" id="tgl" class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs font-bold">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Kurir</label>
+                            <div><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Tanggal</label><input type="date" id="tgl" class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs font-bold"></div>
+                            <div><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Kurir</label>
                                 <select id="kurir" class="w-full p-4 bg-slate-50 rounded-2xl border-none text-xs font-bold text-blue-600 outline-none">
-                                    <option value="POS">POS INDO</option>
-                                    <option value="SPX">SPX</option>
-                                    <option value="JNE">JNE</option>
-                                    <option value="JNT">J&T</option>
-                                    <option value="SICEPAT">SiCepat</option>
+                                    <option value="POS">POS INDO</option><option value="SPX">SPX</option><option value="JNE">JNE</option><option value="JNT">J&T</option><option value="SICEPAT">SiCepat</option>
                                 </select>
                             </div>
                         </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nomor Resi</label>
-                            <input type="text" id="resi" class="w-full p-4 bg-blue-50 text-blue-700 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold">
-                        </div>
-
-                        <button id="btnSimpan" onclick="simpanData()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4">
-                            <i class="fas fa-save"></i> SIMPAN PESANAN
-                        </button>
+                        <div><label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Nomor Resi</label><input type="text" id="resi" class="w-full p-4 bg-blue-50 text-blue-700 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 font-mono font-bold"></div>
+                        <button id="btnSimpan" onclick="simpanData()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4"><i class="fas fa-save"></i> SIMPAN PESANAN</button>
                     </div>
                 </div>
             </div>
 
-            <!-- List Section -->
             <div class="lg:col-span-8">
                 <div class="bg-white rounded-[32px] shadow-sm border border-slate-200 overflow-hidden">
                     <div class="p-6 border-b flex justify-between items-center bg-slate-50/50">
-                        <div class="flex items-center gap-4">
-                            <input type="text" id="searchInput" onkeyup="renderFiltered()" placeholder="Cari..." class="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 w-40 md:w-64 transition-all">
-                        </div>
+                        <input type="text" id="searchInput" onkeyup="renderFiltered()" placeholder="Cari..." class="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 w-40 md:w-64 transition-all">
                         <span id="counter" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black">0 ORDER</span>
                     </div>
-
                     <div class="overflow-x-auto">
                         <table class="w-full" id="tabelData">
                             <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
-                                <tr>
-                                    <th class="px-6 py-4 text-left">Pembeli</th>
-                                    <th class="px-6 py-4 text-left">Produk & Keuangan</th>
-                                    <th class="px-6 py-4 text-right">Aksi</th>
-                                </tr>
+                                <tr><th class="px-6 py-4 text-left">Pembeli</th><th class="px-6 py-4 text-left">Produk & Keuangan</th><th class="px-6 py-4 text-right">Aksi</th></tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-100"></tbody>
+                            <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
                         </table>
                     </div>
-                    <div id="emptyState" class="p-20 text-center text-slate-300 hidden">
-                        <i class="fas fa-box-open text-4xl mb-4"></i>
-                        <p class="font-bold text-sm">Tidak ada data ditemukan</p>
-                    </div>
+                    <div id="emptyState" class="p-20 text-center text-slate-300 hidden"><i class="fas fa-box-open text-4xl mb-4"></i><p class="font-bold text-sm">Tidak ada data ditemukan</p></div>
                 </div>
             </div>
         </div>
@@ -262,68 +137,26 @@
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwN5aNPafki_pq3sMKCamETSeLvHs1gDEb0lB4KRPxqxJs1PtpxzB4doFe7JRhWG-IOjg/exec';
         let masterData = [];
         let currentActiveResi = "";
+        let isSaving = false;
 
-        function showToast(msg) {
-            const toast = document.getElementById("toast");
-            toast.innerText = msg;
-            toast.className = "show";
-            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
-        }
+        function showToast(msg) { const t = document.getElementById("toast"); t.innerText = msg; t.className = "show"; setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000); }
+        function loading(show, text = "") { const l = document.getElementById('loader'); l.style.display = show ? 'flex' : 'none'; if(text) document.getElementById('loaderText').innerText = text; }
+        function hitungUntung() { const h = parseFloat(document.getElementById('harga').value) || 0; const s = parseFloat(document.getElementById('setoran').value) || 0; document.getElementById('untung').value = h - s; }
+        function formatWA(number) { let c = String(number).replace(/\D/g, ''); if (c.startsWith('0')) c = '62' + c.slice(1); return c; }
+        function escapeHtml(t) { if(!t) return ''; return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-        function loading(show, text = "") {
-            const loader = document.getElementById('loader');
-            loader.style.display = show ? 'flex' : 'none';
-            if(text) document.getElementById('loaderText').innerText = text;
-        }
-
-        function hitungUntung() {
-            const harga = parseFloat(document.getElementById('harga').value) || 0;
-            const setoran = parseFloat(document.getElementById('setoran').value) || 0;
-            document.getElementById('untung').value = harga - setoran;
-        }
-
-        // --- ENHANCED SMART PARSER ENGINE ---
         function parseData() {
             const raw = document.getElementById('rawText').value;
             const indicator = document.getElementById('parseIndicator');
-
-            const namePattern = /^Nama\s*[:\-]\s*([^\r\n]+)/im;
-            const waPattern = /^No\.\s*Tlp\/WA\s*[:\-]\s*(\d+)/im;
-            const productPattern = /^Nama\s*barang\s*[:\-]\s*([^\r\n]+)/im;
-            const pricePattern = /^Harga\s*[:\-]?\s*(\d+)/im;
-            const depositPattern = /^Setoran\s*[:\-]?\s*(\d+)/im;
-            const profitPattern = /^Untung\s*[:\-]?\s*(\d+)/im;
-            const resiPattern = /(?:Resi|NoResi|Tracking)\s*[:\-]\s*([A-Z0-9]+)/i;
-
-            const nameMatch = raw.match(namePattern);
-            const waMatch = raw.match(waPattern);
-            const productMatch = raw.match(productPattern);
-            const priceMatch = raw.match(pricePattern);
-            const depositMatch = raw.match(depositPattern);
-            const profitMatch = raw.match(profitPattern);
-            const resiMatch = raw.match(resiPattern);
-
-            let detected = false;
-
-            if(nameMatch) { document.getElementById('nama').value = nameMatch[1].trim(); detected = true; }
-            if(waMatch) { document.getElementById('wa').value = waMatch[1].trim(); detected = true; }
-            if(productMatch) { document.getElementById('produk').value = productMatch[1].trim(); detected = true; }
-            if(priceMatch) { document.getElementById('harga').value = priceMatch[1]; detected = true; }
-            if(depositMatch) { document.getElementById('setoran').value = depositMatch[1]; detected = true; }
-            if(resiMatch) { document.getElementById('resi').value = resiMatch[1].trim(); detected = true; }
-
+            let d = false;
+            const n = raw.match(/^Nama\s*[:\-]\s*([^\r\n]+)/im); if(n){ document.getElementById('nama').value=n[1].trim(); d=true; }
+            const w = raw.match(/^No\.\s*Tlp\/WA\s*[:\-]\s*(\d+)/im); if(w){ document.getElementById('wa').value=w[1].trim(); d=true; }
+            const p = raw.match(/^Nama\s*barang\s*[:\-]\s*([^\r\n]+)/im); if(p){ document.getElementById('produk').value=p[1].trim(); d=true; }
+            const pr = raw.match(/^Harga\s*[:\-]?\s*(\d+)/im); if(pr){ document.getElementById('harga').value=pr[1]; d=true; }
+            const dp = raw.match(/^Setoran\s*[:\-]?\s*(\d+)/im); if(dp){ document.getElementById('setoran').value=dp[1]; d=true; }
+            const r = raw.match(/(?:Resi|NoResi|Tracking)\s*[:\-]\s*([A-Z0-9]+)/i); if(r){ document.getElementById('resi').value=r[1].trim(); d=true; }
             hitungUntung();
-
-            if(detected) {
-                indicator.classList.remove('hidden');
-                setTimeout(() => indicator.classList.add('hidden'), 2000);
-            }
-        }
-
-        function formatWA(number) {
-            let cleaned = String(number).replace(/\D/g, '');
-            if (cleaned.startsWith('0')) cleaned = '62' + cleaned.slice(1);
-            return cleaned;
+            if(d){ indicator.classList.remove('hidden'); setTimeout(() => indicator.classList.add('hidden'), 2000); }
         }
 
         async function ambilData() {
@@ -332,61 +165,46 @@
                 const res = await fetch(`${WEB_APP_URL}?action=read&_=${Date.now()}`);
                 masterData = await res.json();
                 renderFiltered();
-            } catch (e) {
-                showToast("Gagal Sinkron!");
-            } finally {
-                loading(false);
-            }
+            } catch (e) { showToast("Gagal Sinkron!"); } finally { loading(false); }
         }
 
         function renderFiltered() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const container = document.querySelector('#tabelData tbody');
+            const container = document.getElementById('tableBody');
             const emptyState = document.getElementById('emptyState');
             
-            const filtered = masterData.filter(item => 
-                (item.nama || '').toLowerCase().includes(search) || 
-                (item.resi || '').toLowerCase().includes(search)
-            );
-
+            const filtered = masterData.filter(item => (item.nama || '').toLowerCase().includes(search) || (item.resi || '').toLowerCase().includes(search));
             document.getElementById('counter').innerText = `${filtered.length} ORDER`;
             container.innerHTML = '';
 
-            if (filtered.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
+            if (filtered.length === 0) { emptyState.classList.remove('hidden'); } 
+            else {
                 emptyState.classList.add('hidden');
-                filtered.forEach(item => {
+                filtered.forEach((item, idx) => {
+                    // CARI INDEX ASLI DI MASTERDATA (untuk referensi hapus)
+                    const masterIdx = masterData.indexOf(item);
                     const isDone = String(item.selesai).toUpperCase() === 'SELESAI';
                     const waLink = item.wa ? `https://wa.me/${formatWA(item.wa)}` : '#';
                     
                     container.innerHTML += `
                         <tr class="${isDone ? 'status-done' : ''} hover:bg-slate-50 transition-all">
                             <td class="px-6 py-5">
-                                <div class="font-bold text-slate-800 text-sm">${item.nama}</div>
-                                <a href="${waLink}" target="_blank" class="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1">
-                                    <i class="fab fa-whatsapp"></i> ${item.wa || '-'}
-                                </a>
+                                <div class="font-bold text-slate-800 text-sm">${escapeHtml(item.nama)}</div>
+                                <a href="${waLink}" target="_blank" class="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1"><i class="fab fa-whatsapp"></i> ${escapeHtml(item.wa) || '-'}</a>
                             </td>
                             <td class="px-6 py-5">
-                                <div class="text-xs font-bold text-slate-600">${item.produk}</div>
+                                <div class="text-xs font-bold text-slate-600">${escapeHtml(item.produk)}</div>
                                 <div class="flex gap-2 mt-1">
                                     <span class="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-bold">H: ${item.harga || 0}</span>
                                     <span class="text-[9px] bg-blue-50 px-1.5 py-0.5 rounded text-blue-600 font-bold">U: ${item.untung || 0}</span>
                                 </div>
-                                <div class="text-[10px] font-mono text-slate-400 mt-1 uppercase font-bold">${item.ekspedisi} - ${item.resi}</div>
+                                <div class="text-[10px] font-mono text-slate-400 mt-1 uppercase font-bold">${escapeHtml(item.ekspedisi)} - ${escapeHtml(item.resi)}</div>
                             </td>
                             <td class="px-6 py-5 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <button onclick="openTrack('${item.resi}', '${item.ekspedisi}', '${item.nama}')" class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:scale-110 transition-all">
-                                        <i class="fas fa-truck text-xs"></i>
-                                    </button>
-                                    <button onclick="toggleSelesai('${item.resi}', ${isDone})" class="w-9 h-9 rounded-xl ${isDone ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'} flex items-center justify-center hover:scale-110 transition-all">
-                                        <i class="fas ${isDone ? 'fa-undo' : 'fa-check'} text-xs"></i>
-                                    </button>
-                                    <button onclick="hapusData('${item.resi}')" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center hover:scale-110 transition-all">
-                                        <i class="fas fa-trash text-xs"></i>
-                                    </button>
+                                    <button onclick="openTrack(${masterIdx})" class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:scale-110 transition-all"><i class="fas fa-truck text-xs"></i></button>
+                                    <button onclick="toggleSelesai(${masterIdx})" class="w-9 h-9 rounded-xl ${isDone ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'} flex items-center justify-center hover:scale-110 transition-all"><i class="fas ${isDone ? 'fa-undo' : 'fa-check'} text-xs"></i></button>
+                                    <button onclick="konfirmasiHapus(${masterIdx})" class="w-9 h-9 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center hover:scale-110 transition-all"><i class="fas fa-trash text-xs"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -395,160 +213,80 @@
             }
         }
 
-let isSaving = false;
-
-async function simpanData() {
-
-    if (isSaving) return;
-
-    const payload = {
-        action: 'create',
-        nama: document.getElementById('nama').value.trim(),
-        wa: document.getElementById('wa').value.trim(),
-        produk: document.getElementById('produk').value.trim(),
-        harga: document.getElementById('harga').value,
-        setoran: document.getElementById('setoran').value,
-        untung: document.getElementById('untung').value,
-        tgl: document.getElementById('tgl').value,
-        ekspedisi: document.getElementById('kurir').value,
-        resi: document.getElementById('resi').value.trim(),
-        selesai: 'Proses'
-    };
-
-    // VALIDASI
-    if (
-        !payload.nama ||
-        !payload.wa ||
-        !payload.produk ||
-        !payload.resi
-    ) {
-        alert("Data belum lengkap!");
-        return;
-    }
-
-    isSaving = true;
-
-    const btn = document.getElementById('btnSimpan');
-
-    btn.disabled = true;
-    btn.innerHTML = 'MENYIMPAN...';
-
-    loading(true, "Menyimpan...");
-
-    try {
-
-        await fetch(WEB_APP_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(payload)
-        });
-
-        showToast("Data Tersimpan!");
-
-        // RESET FORM
-        ['nama','wa','produk','resi','rawText','harga','setoran','untung']
-        .forEach(id => {
-            document.getElementById(id).value = '';
-        });
-
-        document.getElementById('tgl').valueAsDate = new Date();
-
-        // REFRESH DATA
-        setTimeout(() => {
-            ambilData();
-        }, 1000);
-
-    } catch (e) {
-
-        console.log(e);
-        showToast("Gagal menyimpan");
-
-    } finally {
-
-        loading(false);
-
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> SIMPAN PESANAN';
-
-        isSaving = false;
-    }
-}
-
-async function toggleSelesai(resi, statusSekarang) {
-
-    loading(true, "Update Status...");
-
-    try {
-
-        const statusBaru = statusSekarang ? 'Proses' : 'Selesai';
-
-        await fetch(WEB_APP_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({
-                action: 'update',
-                resi: String(resi).trim(),
-                selesai: statusBaru
-            })
-        });
-
-        setTimeout(() => {
-            ambilData();
-        }, 1000);
-
-    } catch (e) {
-
-        loading(false);
-
-    }
-}
-}
-        function openTrack(resi, kurir, nama) {
-            const cleanResi = String(resi).trim();
-            const el = document.createElement('textarea');
-            el.value = cleanResi;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            currentActiveResi = cleanResi;
-            
-            document.getElementById('modalTitle').innerText = nama;
-            document.getElementById('modalSubtitle').innerText = `${kurir} - ${cleanResi}`;
-            document.getElementById('iframeLoader').style.display = 'flex';
-            
-            let url = "";
-            const k = kurir.toUpperCase();
-            if (k.includes("POS")) url = `https://www.posindonesia.co.id/id/tracking?resi=${cleanResi}`;
-            else if (k.includes("SPX")) url = `https://spx.co.id/track/${cleanResi}`;
-            else url = `https://cekresi.com/?noresi=${cleanResi}`;
-
-            document.getElementById('trackFrame').src = url;
-            document.getElementById('modalTrack').style.display = 'flex';
-            showToast("Resi disalin otomatis!");
+        async function simpanData() {
+            if (isSaving) return;
+            const payload = { action: 'create', nama: document.getElementById('nama').value.trim(), wa: document.getElementById('wa').value.trim(), produk: document.getElementById('produk').value.trim(), harga: document.getElementById('harga').value, setoran: document.getElementById('setoran').value, untung: document.getElementById('untung').value, tgl: document.getElementById('tgl').value, ekspedisi: document.getElementById('kurir').value, resi: document.getElementById('resi').value.trim(), selesai: 'Proses' };
+            if (!payload.nama || !payload.wa || !payload.produk || !payload.resi) { alert("Data belum lengkap!"); return; }
+            isSaving = true; const btn = document.getElementById('btnSimpan'); btn.disabled = true; btn.innerHTML = 'MENYIMPAN...'; loading(true, "Menyimpan...");
+            try {
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+                showToast("Data Tersimpan!"); ['nama','wa','produk','resi','rawText','harga','setoran','untung'].forEach(id => { document.getElementById(id).value = ''; }); document.getElementById('tgl').valueAsDate = new Date();
+                setTimeout(() => ambilData(), 1500);
+            } catch (e) { showToast("Gagal menyimpan"); } finally { loading(false); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> SIMPAN PESANAN'; isSaving = false; }
         }
 
-        function copyCurrentResi() {
-            if(currentActiveResi) {
-                const el = document.createElement('textarea');
-                el.value = currentActiveResi;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                showToast("Berhasil disalin!");
+        async function toggleSelesai(idx) {
+            const item = masterData[idx]; if(!item) return;
+            const statusBaru = String(item.selesai).toUpperCase() === 'SELESAI' ? 'Proses' : 'Selesai';
+            loading(true, "Update Status...");
+            try {
+                await fetch(WEB_APP_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', resi: String(item.resi).trim(), selesai: statusBaru }) });
+                setTimeout(() => ambilData(), 1500);
+            } catch (e) { showToast("Gagal update"); loading(false); }
+        }
+
+        // FUNGSI HAPUS BARU - MENGGUNAKAN INDEX AMAN
+        function konfirmasiHapus(idx) {
+            const item = masterData[idx];
+            if (!item) { showToast("Data tidak ditemukan!"); return; }
+            
+            if (confirm("Yakin hapus pesanan resi: " + item.resi + "?")) {
+                prosesHapus(String(item.resi).trim());
             }
         }
 
-        function closeModal() {
-            document.getElementById('modalTrack').style.display = 'none';
-            document.getElementById('trackFrame').src = "";
+        async function prosesHapus(resi) {
+            loading(true, "Menghapus Data...");
+            console.log("Mengirim permintaan hapus untuk resi:", resi); // Debug di Inspect Element
+            
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' }, // Tambahan penting untuk no-cors
+                    body: JSON.stringify({ action: 'delete', resi: resi })
+                });
+                showToast("Permintaan hapus terkirim. Menunggu server...");
+                
+                // Kasih waktu 3 detik agar Google Spreadsheet selesai menghapus baris
+                setTimeout(() => {
+                    ambilData();
+                }, 3000);
+                
+            } catch (e) {
+                console.error("Error hapus:", e);
+                showToast("Gagal mengirim permintaan hapus");
+                loading(false);
+            }
         }
 
-        window.onload = () => {
-            document.getElementById('tgl').valueAsDate = new Date();
-            ambilData();
-        };
+        function openTrack(idx) {
+            const item = masterData[idx]; if(!item) return;
+            const cleanResi = String(item.resi).trim();
+            currentActiveResi = cleanResi;
+            navigator.clipboard.writeText(cleanResi).catch(() => {});
+            let url = ""; const k = (item.ekspedisi || '').toUpperCase();
+            if (k.includes("POS")) url = `https://www.posindonesia.co.id/id/tracking?resi=${cleanResi}`;
+            else if (k.includes("SPX")) url = `https://spx.co.id/track/${cleanResi}`;
+            else url = `https://cekresi.com/?noresi=${cleanResi}`;
+            window.open(url, '_blank');
+            showToast("Resi disalin & tab kurir dibuka!");
+        }
+
+        function copyCurrentResi() { if(currentActiveResi) navigator.clipboard.writeText(currentActiveResi).then(() => showToast("Disalin!")).catch(() => showToast("Gagal salin")); }
+        function closeModal() { document.getElementById('modalTrack').style.display = 'none'; }
+
+        window.onload = () => { document.getElementById('tgl').valueAsDate = new Date(); ambilData(); };
     </script>
 </body>
 </html>
